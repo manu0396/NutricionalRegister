@@ -1,0 +1,65 @@
+name: Mainline Build Metrics
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-metrics:
+    name: build-metrics
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Measure clean and incremental builds and artifact sizes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          clean_started=$(date +%s)
+          ./gradlew clean :androidApp:assembleRelease :shared:assembleSharedReleaseXCFramework \
+            --no-configuration-cache --console=plain
+          clean_seconds=$(( $(date +%s) - clean_started ))
+
+          incremental_started=$(date +%s)
+          ./gradlew :androidApp:assembleRelease :shared:assembleSharedReleaseXCFramework \
+            --no-configuration-cache --console=plain
+          incremental_seconds=$(( $(date +%s) - incremental_started ))
+
+          apk_path=$(find androidApp/build/outputs/apk/release -maxdepth 1 -name '*.apk' -print -quit)
+          framework_path=$(find shared/build/XCFrameworks -maxdepth 3 -type d -name 'Shared.xcframework' -print -quit)
+          test -n "$apk_path"
+          test -n "$framework_path"
+
+          apk_bytes=$(stat -f%z "$apk_path")
+          framework_kib=$(du -sk "$framework_path" | awk '{print $1}')
+
+          {
+            echo "## Platform build metrics"
+            echo
+            echo "Classification: baseline measurement; no artifact-size budget is configured."
+            echo
+            echo "| Metric | Observation |"
+            echo "|---|---:|"
+            echo "| Clean Android release + iOS framework build | ${clean_seconds}s |"
+            echo "| Incremental Android release + iOS framework build | ${incremental_seconds}s |"
+            echo "| Android release APK | ${apk_bytes} bytes |"
+            echo "| iOS release XCFramework | ${framework_kib} KiB |"
+          } >> "$GITHUB_STEP_SUMMARY"

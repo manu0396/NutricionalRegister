@@ -1,6 +1,7 @@
 rootProject.name = "NutricionalRegister"
 
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         google {
             mavenContent {
@@ -29,3 +30,11 @@ dependencyResolutionManagement {
 
 include(":androidApp")
 include(":shared")
+include(":core:common")
+include(":core:domain")
+include(":core:data")
+include(":feature:search")
+include(":feature:scan")
+include(":feature:diary")
+include(":feature:summary")
+include(":architecture-tests")
