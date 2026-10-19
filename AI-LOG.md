@@ -87,3 +87,25 @@ do not infer successful verification from generated files alone.
 - **Failures/corrections**: The Android platform package ID is
   `platforms;android-37.0`, not `platforms;android-37`; corrected after checking
   the installed SDK package metadata.
+
+### PR CI Gradle plugin source correction
+
+- **Scope**: Restore the missing module-dependency policy plugin and its
+  TestKit coverage to the PR branch, and prevent `.gitignore` from hiding
+  Kotlin source packages named `build`.
+- **AI assistance**: Copilot-assisted hosted CI log diagnosis and repository
+  ignore-rule correction.
+- **Review**: Pending maintainer review. This change is intended for PR #1.
+- **Commands run**:
+  `./gradlew :build-logic:test :androidApp:assembleDebug
+  :shared:iosSimulatorArm64Test --no-configuration-cache --console=plain`,
+  `git diff --check`, and GitHub Actions workflow YAML parsing.
+- **Results**: Both hosted workflows failed because
+  `ModuleDependencyPolicyPlugin` was absent from the committed included build.
+  The `**/build/` ignore pattern also matched the Kotlin package directory
+  `com/nutrition/build`, so the plugin and TestKit test had not been committed.
+  Added the source-tree exception and the previously omitted plugin and tests.
+  The local Gradle TestKit, Android debug assembly, and iOS simulator test
+  targets pass; clean hosted reruns are pending.
+- **Failures/corrections**: Added an exception for package directories named
+  `build` under source trees; hosted verification remains pending.
