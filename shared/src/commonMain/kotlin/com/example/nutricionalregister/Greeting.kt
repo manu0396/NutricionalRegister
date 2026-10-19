@@ -1,9 +1,7 @@
 package com.example.nutricionalregister
 
-class Greeting {
+public class Greeting {
     private val platform = getPlatform()
 
-    fun greet(): String {
-        return sayHello(platform.name)
-    }
+    public fun greet(): String = sayHello(platform.name)
 }

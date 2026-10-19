@@ -4,9 +4,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class SharedCommonTest {
-
     @Test
-    fun example() {
-        assertEquals(3, 1 + 2)
+    fun greetingUsesTheProvidedNameDeterministically() {
+        assertEquals("Hello, NutriLog!", sayHello("NutriLog"))
     }
 }

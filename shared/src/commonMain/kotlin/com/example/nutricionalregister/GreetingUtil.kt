@@ -1,4 +1,3 @@
 package com.example.nutricionalregister
 
-fun sayHello(to: String): String =
-    "Hello, $to!"
+public fun sayHello(to: String): String = "Hello, $to!"

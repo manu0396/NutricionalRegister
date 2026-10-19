@@ -1,31 +1,84 @@
-This is a Kotlin Multiplatform project targeting Android, iOS.
+# NutriLog
 
-* [/iosApp](./iosApp/iosApp) contains an iOS application. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+NutriLog is a Kotlin Multiplatform nutrition-diary project. This repository
+currently establishes the platform foundation; it does not yet implement diary
+storage, nutrition calculations, scanning, search, accounts, or synchronization.
+Diary data is intended to remain on-device, with no analytics or tracking.
 
-* [/shared](./shared/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./shared/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./shared/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./shared/src/jvmMain/kotlin)
-    folder is the appropriate location.
+## Architecture
 
-### Running the apps
+- `androidApp` is the native Android application and owns the Jetpack Compose UI.
+- `iosApp` is the native SwiftUI application.
+- `shared` is the Apple framework facade used by the iOS app, not a UI or
+  business-logic layer.
+- `core:domain` defines domain behavior and has no project-module dependencies.
+- `core:data` implements domain-facing data behavior and depends only on
+  `core:domain`.
+- `feature:search`, `feature:scan`, `feature:diary`, and `feature:summary` are
+  independent presentation modules that depend only on `core:domain`.
+- `core:common` is intentionally standalone and has no consumers until a later
+  specification permits them.
+- `architecture-tests` and the Gradle module dependency policy enforce source
+  and project-module boundaries.
 
-Use the run configurations provided by the run widget in your IDE's toolbar. You can also use these commands and options:
+The version catalog in `gradle/libs.versions.toml` is the central dependency
+inventory. Before adopting a third-party dependency, record its need,
+alternatives, binary-size impact, build-time impact, licence, and exit strategy
+in a decision record under `docs/adr/`.
 
-- Android app: `./gradlew :androidApp:assembleDebug`
-- iOS app: open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+## Prerequisites
 
-### Running tests
+- JDK 21 (the pinned Gradle daemon toolchain).
+- Android SDK for Android build and lint tasks.
+- Xcode and iOS Simulator support for iOS builds and tests.
 
-Use the run button in your IDE's editor gutter, or run tests using Gradle tasks:
+## Build and verify
 
-- Android tests: `./gradlew :shared:testAndroidHostTest`
-- iOS tests: `./gradlew :shared:iosSimulatorArm64Test`
+From the repository root:
 
----
+```sh
+./gradlew :androidApp:assembleDebug
+./gradlew :shared:testAndroidHostTest
+./gradlew :shared:iosSimulatorArm64Test
+./gradlew :androidApp:lint
+./gradlew :architectureTest
+./gradlew :coverageVerify
+./gradlew :kotlinLint
+swift format lint --strict --recursive iosApp/iosApp
+xcodebuild -project iosApp/iosApp.xcodeproj \
+  -scheme iosApp \
+  -destination 'generic/platform=iOS Simulator' \
+  build
+```
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+Kover measures JVM/Android-host coverage only. It enforces at least 80% line
+coverage separately for `core:domain` and `core:data` when those modules contain
+JVM-measurable production code; it does not claim Kotlin/Native coverage.
+Architecture checks include a Gradle TestKit negative case that confirms a
+forbidden dependency fails with an actionable edge.
+
+The equivalent pull-request checks run in `.github/workflows/android.yml` and
+`.github/workflows/ios.yml`. The review-activity gate is
+`.github/workflows/review-gate.yml`; a submitted review from someone other than
+the pull-request author is required, but approval is not. Repository
+administrators must mark `android-verification`, `ios-verification`, and
+`review-activity-head` as required checks in branch protection/rulesets and
+require pull requests to merge to `main`. The review workflow writes the
+stable `review-activity-head` check directly to the pull-request head commit.
+Do not require an approval for this policy.
+
+## Testing and contribution records
+
+Read [the test policy](docs/testing.md), [the platform quickstart](specs/001-platform-skeleton/quickstart.md),
+and [the AI-assisted change log](AI-LOG.md). Use one atomic commit per
+implementation task and include its task ID in the commit message. All changes
+to `main` must arrive through a pull request with recorded review activity.
+
+The `Mainline Build Metrics` workflow measures clean and incremental Android
+release/iOS framework build durations and reports the Android APK and iOS
+XCFramework sizes. Initial measurements are baselines; no artifact-size budget
+is set yet. The local macOS baseline on 2026-10-19 was 53 seconds for the clean
+Gradle validation/build and 2 seconds incremental; the unsigned
+Android release APK was 8,861,221 bytes and the iOS release XCFramework was
+3,100 KiB. These are local measurements, not GitHub-hosted PR workflow timing.
+The under-10-minute CI target remains pending its first hosted workflow run.
