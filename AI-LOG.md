@@ -106,6 +106,8 @@ do not infer successful verification from generated files alone.
   `com/nutrition/build`, so the plugin and TestKit test had not been committed.
   Added the source-tree exception and the previously omitted plugin and tests.
   The local Gradle TestKit, Android debug assembly, and iOS simulator test
-  targets pass; clean hosted reruns are pending.
+  targets pass. Hosted Android run 39225953155 and iOS run 39225953154 both
+  pass; PR durations were 4m30s and 8m30s respectively.
 - **Failures/corrections**: Added an exception for package directories named
-  `build` under source trees; hosted verification remains pending.
+  `build` under source trees; the original broad ignore rule had hidden both
+  files from the platform-skeleton commit.
