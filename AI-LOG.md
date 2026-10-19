@@ -68,3 +68,22 @@ do not infer successful verification from generated files alone.
   required branch-protection checks. Run the workflows on GitHub to verify the
   review-event Check Runs API permission and record actual hosted PR duration;
   the under-10-minute target is not claimed as met.
+
+### PR CI SDK setup correction (T036 follow-up)
+
+- **Scope**: Correct the Android SDK setup failure in both PR verification
+  workflows.
+- **AI assistance**: Copilot-assisted CI log diagnosis and workflow correction.
+- **Review**: Pending maintainer review. This change is intended for PR #1.
+- **Commands run**: `gh run view 39224714726 --log-failed`,
+  `gh run view 39224714671 --log-failed`,
+  `./gradlew :androidApp:assembleDebug :shared:iosSimulatorArm64Test
+  --no-configuration-cache --console=plain`, and GitHub Actions YAML parsing.
+- **Results**: Both hosted failures were traced to setup-android v3 requesting
+  the retired SDK `tools` package. The workflows now use setup-android v4;
+  Android explicitly requests platform 37.0 and Build Tools 36.0.0, while iOS
+  sets up command-line tools without extra Android packages. Local Gradle
+  targets and workflow YAML validation pass. Hosted reruns are still required.
+- **Failures/corrections**: The Android platform package ID is
+  `platforms;android-37.0`, not `platforms;android-37`; corrected after checking
+  the installed SDK package metadata.

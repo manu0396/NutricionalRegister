@@ -23,7 +23,9 @@ jobs:
           java-version: "21"
 
       - name: Set up Android SDK for the included Gradle build
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ""
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
