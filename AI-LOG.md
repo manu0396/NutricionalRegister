@@ -357,3 +357,34 @@ do not infer successful verification from generated files alone.
   exit 0 in 17 s; `xcodebuild` 0 errors. Live walkthrough confirmed brand and
   quantity populated, real nutrition values, the empty-state message, and
   placeholder tiles for image-less products.
+
+### 003 documentation completion and Material icons (2026-10-20)
+
+- **Scope**: Commit and push the 002 product-search feature; complete the missing
+  003 UI-refresh documentation (research, data model, quickstart, requirements
+  checklist, image contract); and close the one remaining implementation gap —
+  the controls that used typographic glyphs instead of designed icons.
+- **AI assistance**: orchestrator documentation pass plus frontend-agent icon
+  integration; measured on emulator-5556.
+- **Review**: Pending maintainer review.
+- **Commands run**: `git add`/`git commit`/`git push` for 002;
+  `curl` against Maven Central and Google Maven to verify icon-artifact
+  coordinates; `./gradlew :androidApp:compileDebugKotlin`,
+  `:androidApp:ktlintMainSourceSetCheck`, `:androidApp:connectedDebugAndroidTest`,
+  `clean` + full verification gate + `assembleRelease` +
+  `assembleSharedXCFramework`, and `xcodebuild`.
+- **Results**: 002 committed as `feat(search): add offline-first product search`
+  (89 files) and pushed to `origin/002-product-search`. 003 gained
+  `research.md`, `data-model.md`, `quickstart.md`,
+  `checklists/requirements.md` and `contracts/open-food-facts-images.md`; plan
+  and spec cross-linked and the spec marked implemented. The JetBrains
+  `material-icons-core` mirror does not resolve at the pinned Compose line
+  (last release 1.7.3), so ADR-0011 adopts the AndroidX
+  `androidx.compose.material:material-icons-core` (1.7.8); the `←`, `✕`, `⌕`
+  glyphs became `ArrowBack`/`Close`/`Search` vector icons. Instrumented tests
+  20/20; clean verification exit 0; release APK 11,463,514 B (was 11,381,386);
+  `Shared.xcframework` unchanged at 92,024 KB; `xcodebuild` 0 errors.
+- **Failures/corrections**: first attempted the JetBrains icon coordinates and
+  hit `Could not find org.jetbrains.compose.material:material-icons-core:1.12.2`
+  at dependency resolution; corrected to AndroidX coordinates and recorded the
+  failed attempt and the reason in ADR-0011's validation record.

@@ -19,8 +19,11 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -183,10 +186,10 @@ private fun DetailBackBar(
                     .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                     .semantics { contentDescription = BACK_DESCRIPTION },
         ) {
-            Text(
-                text = "←",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = BACK_DESCRIPTION,
+                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
         Text(
