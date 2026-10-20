@@ -412,3 +412,9 @@ do not infer successful verification from generated files alone.
   contradicted by it.
 - **Failures/corrections**: none in the build; the review gate failure is a
   process constraint, tracked as convergence task T057 (ADR + workflow change).
+- **Base-branch finding (2026-10-20)**: the `review-activity` job uses the
+  `pull_request_target` trigger, which runs the workflow file from the **base
+  branch**, not the PR branch. Pushing the ADR-0012 workflow change to the PR
+  branch therefore does not affect the check: the re-run (39392149834) still
+  executed the old step and failed. The fix takes effect only once merged to
+  `main`. Android Verification (5m17s) and iOS Verification (7m23s) remain green.

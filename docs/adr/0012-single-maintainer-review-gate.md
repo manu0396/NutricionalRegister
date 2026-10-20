@@ -129,8 +129,15 @@ one-condition change in a single workflow file, with no application impact.
   run 39390899262; a submitted `COMMENTED` self-review (PRR_kwDOVPOHTM8AAAABTLyg2w)
   was rejected by the check on re-run 39391340341 because the author equals the
   PR author. The repository has one collaborator (`manu0396`).
-- **Post-change validation (2026-10-20)**: after amending the workflow, the gate
-  is re-evaluated on PR #2 and is expected to pass on the next
-  `pull_request_target` / `pull_request_review` event; the passing check summary
-  names the review (author and state) that satisfied it. Android Verification and
-  iOS Verification remain green (268 s and 467 s respectively).
+- **Base-branch execution semantics (verified 2026-10-20)**: the amended workflow
+  does **not** take effect on PR #2 even after being pushed, because the trigger
+  is `pull_request_target`, which runs the workflow file **from the base branch
+  (`main`)**, not from the PR branch. The re-run after the fix (39392149834)
+  still executed the old step and failed. The fix therefore takes effect only
+  **after it is merged to `main`**; the check on this PR is expected to remain
+  red until then. This is a consequence of the chosen trigger, not of the fix.
+- **Post-merge expectation (2026-10-20)**: once this change is on `main`, the
+  gate passes on the next `pull_request_target` / `pull_request_review` event,
+  and its passing summary names the review (author and state) that satisfied it.
+  Android Verification and iOS Verification remain green (5m17s and 7m23s on the
+  latest runs).
