@@ -9,6 +9,7 @@ android {
         applicationId = "com.example.nutricionalregister"
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 }
 
@@ -25,5 +26,12 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.ui)
     implementation(libs.compose.uiToolingPreview)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+    androidTestImplementation(libs.compose.ui.test.junit4.android)
+    androidTestImplementation(libs.androidx.testExt.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.coil.test)
+    debugImplementation(libs.compose.ui.test.manifest)
     debugImplementation(libs.compose.uiTooling)
 }

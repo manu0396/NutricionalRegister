@@ -3,6 +3,16 @@ plugins {
     alias(libs.plugins.kover)
 }
 
+kotlin {
+    sourceSets.commonMain.dependencies {
+        implementation(libs.coroutines.core)
+    }
+
+    sourceSets.commonTest.dependencies {
+        implementation(libs.coroutines.test)
+    }
+}
+
 kover {
     reports {
         verify {
@@ -14,9 +24,9 @@ kover {
 }
 
 tasks.named("koverVerify") {
-    onlyIf("core:domain has JVM-measurable production sources") {
+    val measurableSources =
         fileTree("src") {
             include("**/commonMain/**/*.kt", "**/androidMain/**/*.kt", "**/jvmMain/**/*.kt")
-        }.files.isNotEmpty()
-    }
+        }
+    onlyIf("core:domain has JVM-measurable production sources") { measurableSources.files.isNotEmpty() }
 }

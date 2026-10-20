@@ -1,0 +1,47 @@
+CREATE TABLE RecentSearch (
+    normalized_term TEXT NOT NULL PRIMARY KEY,
+    display_term TEXT NOT NULL,
+    last_completed_at_epoch_millis INTEGER NOT NULL,
+    completion_sequence INTEGER NOT NULL UNIQUE
+);
+
+CREATE TABLE RecentSearchSequence (
+    singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
+    sequence_value INTEGER NOT NULL
+);
+
+INSERT INTO RecentSearchSequence (singleton, sequence_value)
+VALUES (1, 0);
+
+nextCompletionSequence:
+SELECT sequence_value + 1
+FROM RecentSearchSequence
+WHERE singleton = 1;
+
+advanceCompletionSequence:
+UPDATE RecentSearchSequence
+SET sequence_value = ?
+WHERE singleton = 1;
+
+insertRecentSearch:
+INSERT INTO RecentSearch (
+    normalized_term,
+    display_term,
+    last_completed_at_epoch_millis,
+    completion_sequence
+) VALUES (?, ?, ?, ?);
+
+deleteRecentSearch:
+DELETE FROM RecentSearch WHERE normalized_term = ?;
+
+trimRecentSearches:
+DELETE FROM RecentSearch
+WHERE normalized_term NOT IN (
+    SELECT normalized_term
+    FROM RecentSearch
+    ORDER BY completion_sequence DESC
+    LIMIT 10
+);
+
+selectRecentSearches:
+SELECT * FROM RecentSearch ORDER BY completion_sequence DESC LIMIT 10;
