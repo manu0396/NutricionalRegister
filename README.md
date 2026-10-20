@@ -1,9 +1,11 @@
 # NutriLog
 
-NutriLog is a Kotlin Multiplatform nutrition-diary project. This repository
-currently establishes the platform foundation; it does not yet implement diary
-storage, nutrition calculations, scanning, search, accounts, or synchronization.
-Diary data is intended to remain on-device, with no analytics or tracking.
+NutriLog is a Kotlin Multiplatform nutrition-diary project. The Android app
+currently supports Open Food Facts product search, local result caching, and
+recent-search history. Diary storage, nutrition calculations, scanning,
+accounts, synchronization, and iOS product-search UI are not yet implemented.
+Search terms and cached data remain on-device; no analytics or tracking is
+used.
 
 ## Architecture
 
@@ -25,6 +27,40 @@ The version catalog in `gradle/libs.versions.toml` is the central dependency
 inventory. Before adopting a third-party dependency, record its need,
 alternatives, binary-size impact, build-time impact, licence, and exit strategy
 in a decision record under `docs/adr/`.
+
+## Product search
+
+Product Search submits queries explicitly to the Open Food Facts
+Search-a-licious `GET /search` endpoint. It shows a saved snapshot before
+refreshing, keeps the latest submitted query visible, stores products
+independently from the 10 most recent distinct search terms, and allows a
+history entry to be deleted without deleting its cached products. Cached
+products and recent terms remain available offline; an offline query without
+a cached result shows a distinct offline message with retry/edit actions.
+Missing nutrition values are displayed as unavailable. Product images are
+shown from the Open Food Facts catalogue using the image URLs the catalogue
+already publishes for each product. Product images are licensed
+[CC BY-SA](https://creativecommons.org/licenses/by-sa/3.0/); the app credits
+Open Food Facts for both data and images with a link to the catalogue, and
+shows a neutral placeholder when a product has no image or an image cannot be
+loaded. The image decision, licence analysis, and exit strategy are recorded in
+[`docs/adr/0009-product-images-open-food-facts.md`](docs/adr/0009-product-images-open-food-facts.md).
+The Android UI provides product, nutrition, and image attribution to
+[Open Food Facts](https://world.openfoodfacts.org); its community data may be
+incomplete or inaccurate and is not medical advice.
+
+The public API contract and deployment configuration are documented in
+[`specs/002-product-search/contracts/search-a-licious.md`](specs/002-product-search/contracts/search-a-licious.md).
+They do not publish a Search-a-licious-specific numerical rate limit,
+incoming-client User-Agent or registration requirement, or guarantee that the
+live index returns every configured field. The 10-search-requests/minute/IP
+limit in the Open Food Facts API guide applies to different Product Opener
+search endpoints and must not be assumed to apply here. Product Search sends
+requests only after explicit user submission and uses a descriptive app
+User-Agent; do not run production traffic or a live-service smoke test until
+Search-a-licious-specific usage requirements and a representative response
+contract have been confirmed. Automated tests use fixtures and never call the
+live service.
 
 ## Prerequisites
 
@@ -81,4 +117,7 @@ is set yet. The local macOS baseline on 2026-10-19 was 53 seconds for the clean
 Gradle validation/build and 2 seconds incremental; the unsigned
 Android release APK was 8,861,221 bytes and the iOS release XCFramework was
 3,100 KiB. These are local measurements, not GitHub-hosted PR workflow timing.
-The under-10-minute CI target remains pending its first hosted workflow run.
+Measurements taken after the product-search feature are recorded in the
+validation records under `docs/adr/` and in
+[the AI-assisted change log](AI-LOG.md). The under-10-minute CI target
+remains pending its first hosted workflow run.

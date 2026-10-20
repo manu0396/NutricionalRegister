@@ -23,6 +23,8 @@ dependencies {
     add("ktlintCli", "com.pinterest.ktlint:ktlint-cli:${libs.versions.ktlintCli.get()}")
     implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:${libs.versions.kotlin.get()}")
     implementation("org.jetbrains.kotlin:compose-compiler-gradle-plugin:${libs.versions.kotlin.get()}")
+    implementation("org.jetbrains.kotlin:kotlin-serialization:${libs.versions.kotlin.get()}")
+    implementation("app.cash.sqldelight:gradle-plugin:${libs.versions.sqldelight.get()}")
     implementation("com.android.tools.build:gradle:${libs.versions.agp.get()}")
     implementation("org.jlleitschuh.gradle.ktlint:org.jlleitschuh.gradle.ktlint.gradle.plugin:${libs.versions.ktlintGradle.get()}")
     testImplementation(gradleTestKit())

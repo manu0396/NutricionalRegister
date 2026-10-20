@@ -1,0 +1,97 @@
+CREATE TABLE Product (
+    code TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    brands TEXT,
+    quantity TEXT,
+    nutrition_data_per TEXT,
+    nutri_score_grade TEXT,
+    cached_at_epoch_millis INTEGER NOT NULL
+);
+
+CREATE TABLE ProductNutrition (
+    product_code TEXT NOT NULL,
+    nutrient_key TEXT NOT NULL,
+    amount REAL NOT NULL,
+    unit TEXT,
+    basis TEXT NOT NULL,
+    PRIMARY KEY (product_code, nutrient_key),
+    FOREIGN KEY (product_code) REFERENCES Product(code) ON DELETE CASCADE
+);
+
+CREATE TABLE SearchSnapshot (
+    normalized_term TEXT NOT NULL PRIMARY KEY,
+    display_term TEXT NOT NULL,
+    fetched_at_epoch_millis INTEGER NOT NULL
+);
+
+CREATE TABLE SearchSnapshotProduct (
+    normalized_term TEXT NOT NULL,
+    product_code TEXT NOT NULL,
+    result_position INTEGER NOT NULL,
+    PRIMARY KEY (normalized_term, product_code),
+    UNIQUE (normalized_term, result_position),
+    FOREIGN KEY (normalized_term) REFERENCES SearchSnapshot(normalized_term) ON DELETE CASCADE,
+    FOREIGN KEY (product_code) REFERENCES Product(code) ON DELETE CASCADE
+);
+
+insertProduct:
+INSERT OR IGNORE INTO Product (
+    code,
+    name,
+    brands,
+    quantity,
+    nutrition_data_per,
+    nutri_score_grade,
+    cached_at_epoch_millis
+) VALUES (?, ?, ?, ?, ?, ?, ?);
+
+updateProduct:
+UPDATE Product
+SET name = ?,
+    brands = ?,
+    quantity = ?,
+    nutrition_data_per = ?,
+    nutri_score_grade = ?,
+    cached_at_epoch_millis = ?
+WHERE code = ?;
+
+selectProduct:
+SELECT * FROM Product WHERE code = ?;
+
+selectProductsForTerm:
+SELECT Product.*
+FROM Product
+INNER JOIN SearchSnapshotProduct
+    ON SearchSnapshotProduct.product_code = Product.code
+WHERE SearchSnapshotProduct.normalized_term = ?
+ORDER BY SearchSnapshotProduct.result_position;
+
+upsertNutritionValue:
+INSERT OR REPLACE INTO ProductNutrition (product_code, nutrient_key, amount, unit, basis)
+VALUES (?, ?, ?, ?, ?);
+
+deleteNutritionForProduct:
+DELETE FROM ProductNutrition WHERE product_code = ?;
+
+selectNutritionForProduct:
+SELECT * FROM ProductNutrition WHERE product_code = ? ORDER BY nutrient_key;
+
+insertSnapshot:
+INSERT OR IGNORE INTO SearchSnapshot (normalized_term, display_term, fetched_at_epoch_millis)
+VALUES (?, ?, ?);
+
+updateSnapshot:
+UPDATE SearchSnapshot
+SET display_term = ?,
+    fetched_at_epoch_millis = ?
+WHERE normalized_term = ?;
+
+deleteSnapshotProducts:
+DELETE FROM SearchSnapshotProduct WHERE normalized_term = ?;
+
+insertSnapshotProduct:
+INSERT INTO SearchSnapshotProduct (normalized_term, product_code, result_position)
+VALUES (?, ?, ?);
+
+selectSnapshot:
+SELECT * FROM SearchSnapshot WHERE normalized_term = ?;
