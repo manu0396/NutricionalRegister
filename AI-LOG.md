@@ -388,3 +388,27 @@ do not infer successful verification from generated files alone.
   hit `Could not find org.jetbrains.compose.material:material-icons-core:1.12.2`
   at dependency resolution; corrected to AndroidX coordinates and recorded the
   failed attempt and the reason in ADR-0011's validation record.
+
+### Hosted pull-request CI measurement and convergence (2026-10-20)
+
+- **Scope**: Close task T056 by measuring hosted pull-request CI on the pushed
+  branch, and complete the 002 convergence tasks (docs bookkeeping plus the
+  review-gate process conflict).
+- **AI assistance**: orchestrator CI triage via `gh`, Spec Kit `/speckit-analyze`
+  and `/speckit-converge` passes, documentation updates.
+- **Review**: Pending maintainer review.
+- **Commands run**: `gh pr checks 2`, `gh run list --branch 002-product-search`,
+  `gh run view --log-failed`, `gh run watch`, `gh pr review --comment`.
+- **Results**: hosted CI on PR #2 — **Android Verification passed in 268 s** and
+  **iOS Verification passed in 467 s**, both under the project's 10-minute
+  target, so T056 is closed. The **only** failing check is `review-activity`,
+  which requires a submitted review from a login different from the PR author;
+  the repository has a single collaborator, so the gate is unsatisfiable (a
+  submitted `COMMENTED` self-review was attempted and correctly rejected by the
+  check, run 39391340341). Convergence appended T057-T061 to the 002 task list.
+- **Note on feature ownership**: the product-image surface now visible in the
+  search result and detail screens belongs to feature 003 (ADR-0009/0010). The
+  002 scope note that excluded product images is therefore superseded by 003, not
+  contradicted by it.
+- **Failures/corrections**: none in the build; the review gate failure is a
+  process constraint, tracked as convergence task T057 (ADR + workflow change).

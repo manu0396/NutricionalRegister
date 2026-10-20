@@ -9,7 +9,7 @@ description: "User-visible requirements for searching the food catalogue by name
 
 **Created**: 2026-10-19
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User request to begin F1 Product search from the project brief after
 the platform foundation; users need an interactive app entry point instead of

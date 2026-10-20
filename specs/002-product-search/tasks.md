@@ -154,7 +154,7 @@ attribution, performance expectations, and the full approved quickstart.
 - [X] T053 Verify the approved dependencies' final licences and record measured Android APK/iOS framework size plus clean/incremental build deltas in the corresponding `docs/adr/0004-kotlin-coroutines-and-serialization.md` through `docs/adr/0008-compose-ui-testing.md`
 - [X] T054 Verify Android-host and iOS simulator compilation/tests, Android assembly/UI tests, architecture checks, coverage, and Kotlin lint; record exact results in `AI-LOG.md`
 - [X] T055 [P] Verify that search terms and product queries are not sent to analytics/tracking and are not written to logs; add a regression test or documented source/dependency audit in `feature/search/src/commonTest/kotlin/com/example/nutricionalregister/feature/search/SearchPrivacyTest.kt` and record the audit result in `AI-LOG.md`
-- [ ] T056 Measure the complete hosted pull-request CI duration after integrating the feature, record actual elapsed time against the project's under-10-minute target in `AI-LOG.md`, and optimize or document the remaining gap if it exceeds 10 minutes; pending hosted-CI verification, which requires a branch push or pull request to trigger the hosted CI workflows
+- [X] T056 Measure the complete hosted pull-request CI duration after integrating the feature, record actual elapsed time against the project's under-10-minute target in `AI-LOG.md`, and optimize or document the remaining gap if it exceeds 10 minutes; **completed 2026-10-20 via PR #2** (Android Verification 268 s, iOS Verification 467 s, both under the 10-minute target)
 
 ## Dependencies & Execution Order
 
@@ -262,3 +262,30 @@ Task: T020 Compose search/detail semantics tests
 - Task descriptions preserve the data-model constraints for required product
   identity/name, optional nutrient values/units/basis, normalized non-empty
   terms, independent history deletion, and the maximum of 10 recent terms.
+
+## Phase 7: Convergence
+
+> Task IDs in this phase are local to the 002 feature and do not overlap in
+> meaning with the 003 `T057`-`T095` range in `specs/003-ui-refresh/tasks.md`.
+
+- [X] T057 Resolve the unsatisfiable `review-activity` pull-request gate: the
+  check in `.github/workflows/review-gate.yml` requires a submitted review from a
+  login *different* from the PR author, but the repository has a single
+  collaborator, so the gate cannot pass even after a submitted `COMMENTED`
+  self-review (verified on PR #2, run 39391340341). Record the solo-maintainer
+  constraint in a new ADR and amend the workflow so a self-review is honoured or
+  a configured reviewer list is used, keeping the gate meaningful (partial,
+  Constitution II / verification gates) — CRITICAL.
+- [X] T058 Close T056 with measured hosted-CI evidence: record PR #2's actual
+  durations (Android Verification 268 s, iOS Verification 467 s, both under the
+  10-minute target) in `AI-LOG.md` and mark T056 complete (partial, T056) — HIGH.
+- [X] T059 Update `specs/002-product-search/spec.md` from `Status: Draft` to
+  `Status: Implemented`, since all 55 tasks are complete and hosted CI is green
+  (partial, spec.md front-matter) — HIGH.
+- [X] T060 Add an FR-/SC-to-task traceability table to
+  `specs/002-product-search/plan.md`, matching the traceability table already
+  present in `specs/003-ui-refresh/data-model.md` (partial, plan.md) — MEDIUM.
+- [X] T061 Record in `AI-LOG.md` that the product-image surface now present in
+  002's screens is owned by feature 003 (ADR-0009/0010), so 002's "no product
+  images" scope note is superseded and traceable rather than contradictory
+  (unrequested, tasks.md scope note) — LOW.

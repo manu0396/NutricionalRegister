@@ -192,3 +192,38 @@ mandatory before dependency adoption or production requests.
 No constitution violations. The one external integration risk is bounded by
 the pre-implementation verification gate documented above; no fallback endpoint
 or unsupported rate-limit assumption is introduced.
+
+## Requirement Traceability
+
+Every functional requirement and success criterion maps to at least one task in
+`tasks.md`, so no requirement is implemented without a tracking task.
+
+| Requirement | Task IDs |
+|---|---|
+| FR-001 (enter and submit a term) | T029, T031 |
+| FR-002 (distinguish products in results) | T028, T029 |
+| FR-003 (inspect details without a diary entry) | T040, T048 |
+| FR-004 (on-device results < 1 s; background refresh) | T020, T022, T051 |
+| FR-005 (catalogue results < 3 s) | T019, T021 |
+| FR-006 (distinct outcome states and next action) | T033-T038 |
+| FR-007 (stale results survive a catalogue failure) | T036, T037 |
+| FR-008 (persistent, ordered, de-duplicated, 10-cap history) | T015, T024, T030, T041 |
+| FR-008a (non-blank searches recorded; blanks not) | T025, T030 |
+| FR-009 (missing nutrition shown as unavailable, never zero) | T017, T040 |
+| FR-010 (history on-device; no analytics) | T018, T051 |
+| FR-011 (malformed data never crashes search) | T016, T023 |
+| FR-012 (search never writes diary entries) | T012, T053 |
+| FR-013 (only the latest query updates the screen) | T002, T014 |
+| FR-014 (48 dp targets, accessible names, large text) | T012, T031, T034 |
+| SC-001 (on-device results < 1 s) | T020, T022 |
+| SC-002 (catalogue results < 3 s) | T019, T021 |
+| SC-003 (distinguishable feedback per outcome) | T033-T038 |
+| SC-004 (history survives restart offline; 10-cap; deletion) | T015, T024, T041 |
+| SC-005 (no zero-for-missing; malformed-safe) | T017, T023, T040 |
+| SC-006 (no diary mutation) | T012, T053 |
+| SC-007 (accessible at largest text size) | T031, T034 |
+
+Automated coverage note: SC-001 and SC-002 are timing criteria asserted through
+deterministic repository/clock contracts rather than wall-clock measurements in
+the test suite; the measurement approach is documented in `quickstart.md`.
+
