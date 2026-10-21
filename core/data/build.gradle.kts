@@ -21,6 +21,7 @@ kotlin {
     sourceSets.androidMain.dependencies {
         implementation(libs.ktor.client.okhttp)
         implementation(libs.sqldelight.android.driver)
+        implementation(libs.billing.ktx)
     }
 
     sourceSets.iosMain.dependencies {
@@ -40,6 +41,21 @@ kotlin {
 
 kover {
     reports {
+        filters {
+            // The Android Play Billing client is a thin bridge over the live Billing
+            // SDK: every branch needs a real store connection and a foreground
+            // Activity, so it cannot be exercised from a host test. Its only pure
+            // logic (the BillingResult -> PurchaseFailure mapping) is unit-tested in
+            // AndroidPurchaseClientTest; the integration itself is verified against
+            // a Play test environment and recorded in ADR-0014. Excluding it keeps
+            // the coverage gate measuring the shared, testable behaviour.
+            excludes {
+                classes(
+                    "com.example.nutricionalregister.data.AndroidPurchaseClient",
+                    "com.example.nutricionalregister.data.AndroidPurchaseClient$*",
+                )
+            }
+        }
         verify {
             rule {
                 minBound(80)
