@@ -7,6 +7,11 @@ import com.example.nutricionalregister.domain.product.ProductSearchRepository
 import com.example.nutricionalregister.domain.product.RecentSearch
 import com.example.nutricionalregister.domain.product.RecentSearchRepository
 import com.example.nutricionalregister.domain.product.SearchTerm
+import com.example.nutricionalregister.domain.purchase.PurchaseOutcome
+import com.example.nutricionalregister.domain.purchase.PurchaseRecord
+import com.example.nutricionalregister.domain.purchase.PurchaseRepository
+import com.example.nutricionalregister.domain.purchase.SavedProduct
+import com.example.nutricionalregister.domain.purchase.SavedProductRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlin.test.Test
@@ -24,12 +29,16 @@ class ProductSearchRuntimeTest {
             ProductSearchRuntime(
                 productSearchRepository = productRepository,
                 recentSearchRepository = recentRepository,
+                savedProductRepository = StubSavedProductRepository,
+                purchaseRepository = StubPurchaseRepository,
                 closeResources = { closeCalls += 1 },
             )
 
         // THEN both repositories stay exposed and nothing has been closed yet
         assertSame(productRepository, runtime.productSearchRepository)
         assertSame(recentRepository, runtime.recentSearchRepository)
+        assertSame(StubSavedProductRepository, runtime.savedProductRepository)
+        assertSame(StubPurchaseRepository, runtime.purchaseRepository)
         assertEquals(0, closeCalls)
 
         // WHEN the runtime is closed twice
@@ -56,4 +65,24 @@ private object StubRecentSearchRepository : RecentSearchRepository {
     ) = Unit
 
     override suspend fun deleteRecentSearch(normalizedTerm: String) = Unit
+}
+
+private object StubSavedProductRepository : SavedProductRepository {
+    override suspend fun save(product: SavedProduct) = Unit
+
+    override suspend fun remove(code: String) = Unit
+
+    override fun observeSaved(): Flow<List<SavedProduct>> = flowOf(emptyList())
+
+    override fun isSaved(code: String): Flow<Boolean> = flowOf(false)
+}
+
+private object StubPurchaseRepository : PurchaseRepository {
+    override fun purchase(code: String): Flow<PurchaseOutcome> = flowOf()
+
+    override fun observePurchase(code: String): Flow<PurchaseRecord?> = flowOf(null)
+
+    override fun observePurchasedCodes(): Flow<Set<String>> = flowOf(emptySet())
+
+    override suspend fun reconcile() = Unit
 }

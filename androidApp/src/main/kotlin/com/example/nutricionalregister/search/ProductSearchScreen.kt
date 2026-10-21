@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -27,6 +28,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.example.nutricionalregister.domain.product.Product
 import com.example.nutricionalregister.feature.search.ProductSearchState
 import com.example.nutricionalregister.feature.search.ProductSearchViewModel
 import com.example.nutricionalregister.ui.NutriLogScaffold
@@ -36,29 +38,51 @@ import com.example.nutricionalregister.ui.theme.NutriLogSpacing
 /**
  * Hosts the search experience and, once a product is opened, the detail screen.
  *
+ * This is the Search destination's root. Within the app shell it is rendered with
+ * [contentPadding] applied so its content clears the shell's bottom navigation bar;
+ * the detail screen is *always* rendered within this destination (never as the
+ * whole app), because [viewModel] holds the selected product, so returning from a
+ * detail lands back on Search (FR-007).
+ *
  * The root search view is wrapped in [NutriLogScaffold] so it gets a real app bar
  * and correct system-bar insets in the running app. The detail screen is rendered
- * standalone (no shell) because it owns its own back control and top inset; the
- * behaviour is identical when this composable is rendered directly by a test.
+ * standalone (own back control and top inset), which keeps it correct with or
+ * without an enclosing shell.
+ *
+ * @param contentPadding padding from the enclosing app shell (the bottom bar); when
+ *   the screen is rendered directly by a test this is zero.
+ * @param openProductCode optional product code to open as soon as the destination
+ *   is shown, so the same detail can be opened from another destination (FR-007).
  */
 @Composable
 public fun ProductSearchScreen(
     viewModel: ProductSearchViewModel,
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    openProductCode: String? = null,
+    isProductSaved: (String) -> Boolean = { false },
+    onToggleSaved: (Product) -> Unit = {},
+    purchaseContent: (@Composable (productCode: String) -> Unit)? = null,
 ) {
+    LaunchedEffect(openProductCode) {
+        openProductCode?.let(viewModel::openProduct)
+    }
     val state by viewModel.state.collectAsState()
     val product = state.selectedProduct
     if (product != null) {
         ProductDetailScreen(
             product = product,
             onBack = viewModel::closeProductDetails,
-            modifier = modifier.fillMaxSize(),
+            isSaved = isProductSaved(product.code),
+            onToggleSave = { onToggleSaved(product) },
+            purchaseContent = purchaseContent?.let { section -> { section(product.code) } },
+            modifier = modifier.fillMaxSize().padding(contentPadding),
         )
     } else {
         NutriLogScaffold(
             title = "NutriLog",
             subtitle = "Search the catalogue by food name",
-            modifier = modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize().padding(contentPadding),
         ) { innerPadding ->
             SearchContent(
                 state = state,

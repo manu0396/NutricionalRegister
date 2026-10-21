@@ -30,3 +30,9 @@ tasks.register("kotlinLint") {
     dependsOn(subprojects.filter { it.childProjects.isEmpty() }.map { "${it.path}:ktlintCheck" })
     dependsOn(gradle.includedBuild("build-logic").task(":ktlintSourceCheck"))
 }
+
+tasks.register<Exec>("plainTextCheck") {
+    group = "verification"
+    description = "Fails if repository files contain emoji (constitution Principle V)."
+    commandLine("bash", "scripts/check-no-emoji.sh")
+}

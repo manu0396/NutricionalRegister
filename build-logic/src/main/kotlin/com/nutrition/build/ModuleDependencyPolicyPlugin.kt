@@ -74,6 +74,7 @@ public class ModuleDependencyPolicyPlugin : Plugin<Project> {
                     ":core:data",
                     ":feature:diary",
                     ":feature:scan",
+                    ":feature:savedproducts",
                     ":feature:search",
                     ":feature:summary",
                 )
@@ -83,6 +84,7 @@ public class ModuleDependencyPolicyPlugin : Plugin<Project> {
                     ":core:domain",
                     ":feature:diary",
                     ":feature:scan",
+                    ":feature:savedproducts",
                     ":feature:search",
                     ":feature:summary",
                 )

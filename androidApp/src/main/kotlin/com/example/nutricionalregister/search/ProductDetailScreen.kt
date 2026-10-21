@@ -21,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -31,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +41,7 @@ import com.example.nutricionalregister.domain.product.NutritionBasis
 import com.example.nutricionalregister.domain.product.NutritionValue
 import com.example.nutricionalregister.domain.product.Product
 import com.example.nutricionalregister.ui.InfoChip
+import com.example.nutricionalregister.ui.MinimumTouchTarget
 import com.example.nutricionalregister.ui.SectionHeader
 import com.example.nutricionalregister.ui.StatRow
 import com.example.nutricionalregister.ui.StatRowDivider
@@ -68,6 +71,9 @@ public fun ProductDetailScreen(
     product: Product,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    isSaved: Boolean? = null,
+    onToggleSave: (() -> Unit)? = null,
+    purchaseContent: (@Composable () -> Unit)? = null,
 ) {
     Column(
         modifier =
@@ -111,13 +117,52 @@ public fun ProductDetailScreen(
             ) {
                 DetailTitleBlock(product = product)
 
+                if (isSaved != null && onToggleSave != null) {
+                    SaveProductControl(
+                        productName = product.name,
+                        isSaved = isSaved,
+                        onToggleSave = onToggleSave,
+                    )
+                }
+
                 ProductInfoCard(product = product)
 
                 NutritionCard(product = product)
 
+                purchaseContent?.invoke()
+
                 OpenFoodFactsAttribution()
             }
         }
+    }
+}
+
+/**
+ * The save/remove control on the product detail view (FR-001, FR-017).
+ *
+ * Rendered as a full-width button so it keeps Material's 48 dp minimum touch
+ * target, and its label states the current saved status in words (Save product /
+ * Remove from saved) rather than relying on colour or an icon alone, so the state
+ * is announced correctly by accessibility services (SC-004).
+ */
+@Composable
+private fun SaveProductControl(
+    productName: String,
+    isSaved: Boolean,
+    onToggleSave: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val label = if (isSaved) "Remove from saved" else "Save product"
+    Button(
+        onClick = onToggleSave,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .heightIn(min = MinimumTouchTarget)
+                .testTag("save-product-control")
+                .semantics { contentDescription = "$label: $productName" },
+    ) {
+        Text(text = label)
     }
 }
 
