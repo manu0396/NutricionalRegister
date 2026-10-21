@@ -59,7 +59,7 @@ applies its designated convention before story-specific verification is added.
 
 ---
 
-## Phase 3: User Story 1 - Establish a Verifiable Project Foundation (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 - Establish a Verifiable Project Foundation (Priority: P1) - MVP
 
 **Goal**: A contributor can build the native Android and iOS applications from
 a clean checkout, and pull requests receive deterministic, reviewable checks

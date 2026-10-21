@@ -1,11 +1,12 @@
 <!--
 Sync Impact Report
-Version change: 1.0.0 -> 1.1.0
+Version change: 1.1.0 -> 1.2.0
 Modified principles: none
-Added sections: none
-Modified sections: Platform and Technology Constraints; clarified native UI boundary
+Added sections: Principle V. Plain-Text Documentation and Code (no emojis)
+Modified sections: none
 Removed sections: none
-Follow-up TODOs: none; project brief is authoritative for platform UI choices
+Follow-up TODOs: remove existing emoji glyphs from documentation and code
+  authored before this amendment
 -->
 
 # NutricionalRegister Constitution
@@ -34,6 +35,18 @@ verified.
 Implement only behavior required by the approved specification. Prefer existing
 project patterns and dependencies; justify new dependencies and additional
 abstractions in the plan. Keep code understandable and avoid unrelated changes.
+
+### V. Plain-Text Documentation and Code
+
+Documentation, specifications, commit messages, code comments, and source files
+MUST be plain text. Do NOT use emoji glyphs or decorative pictographic
+characters in repository files. This keeps the repository readable in terminals,
+diffs, code review, and accessibility tooling that do not render emoji
+consistently. Express emphasis with Markdown (bold, headings, lists) instead of
+pictographs. Typographic punctuation already used across the project (for
+example the arrow character in explanatory prose) is out of scope for this rule.
+Automated checks MAY enforce this; if one exists, its violations are treated as
+build failures.
 
 ## Platform and Technology Constraints
 
@@ -64,4 +77,4 @@ principles, PATCH for clarifications), and update the amendment date. Reviews
 MUST check compliance with the principles and record justified exceptions in
 the relevant specification.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-19 | **Last Amended**: 2026-10-19
+**Version**: 1.2.0 | **Ratified**: 2026-10-19 | **Last Amended**: 2026-10-20

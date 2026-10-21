@@ -30,7 +30,7 @@ before adding dependencies or sending product-search requests.
 **Purpose**: Add only approved dependencies and shared testable infrastructure
 that blocks all user-story implementation.
 
-**⚠️ CRITICAL**: T007 is an approval gate for dependency adoption. T001's
+**CRITICAL**: T007 is an approval gate for dependency adoption. T001's
 public-documentation review is complete, but its documented unknowns do not
 authorize production traffic; do not send production requests until
 Search-a-licious-specific operational requirements and a representative
@@ -45,7 +45,7 @@ response contract are confirmed. Automated tests must remain mocked.
 - [X] T014 Create a MockEngine fixture client and reusable HTTP response fixtures in `core/data/src/commonTest/kotlin/com/example/nutricionalregister/data/remote/SearchAliciousTestClient.kt` and `core/data/src/commonTest/kotlin/com/example/nutricionalregister/data/remote/SearchAliciousResponseFixtures.kt`
 - [X] T015 Configure the in-memory SQLDelight test database and test driver setup in `core/data/src/androidHostTest/kotlin/com/example/nutricionalregister/data/local/InMemoryProductDatabase.kt`
 
-## Phase 3: User Story 1 - Search and Inspect Products (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 - Search and Inspect Products (Priority: P1) - MVP
 
 **Goal**: Submit a food-name search, see local results before an online
 refresh, view remote matches when no useful cache exists, and inspect a
