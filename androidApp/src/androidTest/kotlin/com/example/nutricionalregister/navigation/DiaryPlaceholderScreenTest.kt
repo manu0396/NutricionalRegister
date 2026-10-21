@@ -14,7 +14,7 @@ import org.junit.Rule
 import org.junit.Test
 
 /**
- * T022: the Diary destination shows an explicit "not yet available" message rather
+ * T022: the Diary destination shows an explicit placeholder message rather
  * than a blank screen (FR-006).
  */
 class DiaryPlaceholderScreenTest {
@@ -29,7 +29,7 @@ class DiaryPlaceholderScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("Not yet available").assertIsDisplayed()
+        composeRule.onNodeWithText("Coming soon").assertIsDisplayed()
         composeRule.onNodeWithTag("diary-placeholder-message").assertIsDisplayed()
     }
 
@@ -46,6 +46,6 @@ class DiaryPlaceholderScreenTest {
         }
 
         composeRule.onNodeWithTag("bottom-bar-${NutriLogDestination.DIARY.route}").performClick()
-        composeRule.onNodeWithText("Not yet available").assertIsDisplayed()
+        composeRule.onNodeWithText("Coming soon").assertIsDisplayed()
     }
 }

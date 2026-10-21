@@ -13,8 +13,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -168,6 +172,7 @@ private fun SearchContent(
  * Splitting the field and action keeps both at a comfortable, thumb-sized width on
  * every screen size (the previous inline arrangement left the button floating at a
  * fraction of the width) and gives the primary action real elevation and presence.
+ * Polished with clearer shapes and elevation for a more professional look.
  */
 @Composable
 private fun SearchField(
@@ -186,6 +191,13 @@ private fun SearchField(
             onValueChange = onQueryChanged,
             label = { Text("Food name") },
             placeholder = { Text("e.g. Oat drink") },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Outlined.Search,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
             singleLine = true,
             shape = MaterialTheme.shapes.large,
             modifier =
@@ -200,9 +212,19 @@ private fun SearchField(
             onClick = onSearch,
             enabled = searchEnabled,
             shape = MaterialTheme.shapes.large,
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 1.dp),
+            elevation =
+                ButtonDefaults.buttonElevation(
+                    defaultElevation = 2.dp,
+                    pressedElevation = 4.dp,
+                    disabledElevation = 0.dp,
+                ),
             modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
         ) {
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = null,
+                modifier = Modifier.padding(end = NutriLogSpacing.small),
+            )
             Text("Search")
         }
     }

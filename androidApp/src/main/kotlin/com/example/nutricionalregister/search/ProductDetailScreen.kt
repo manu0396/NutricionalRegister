@@ -21,9 +21,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -140,10 +142,11 @@ public fun ProductDetailScreen(
 /**
  * The save/remove control on the product detail view (FR-001, FR-017).
  *
- * Rendered as a full-width button so it keeps Material's 48 dp minimum touch
+ * Rendered as a full-width tonal button so it keeps Material's 48 dp minimum touch
  * target, and its label states the current saved status in words (Save product /
  * Remove from saved) rather than relying on colour or an icon alone, so the state
- * is announced correctly by accessibility services (SC-004).
+ * is announced correctly by accessibility services (SC-004). A leading icon
+ * reinforces the state visually without replacing the wording.
  */
 @Composable
 private fun SaveProductControl(
@@ -153,7 +156,7 @@ private fun SaveProductControl(
     modifier: Modifier = Modifier,
 ) {
     val label = if (isSaved) "Remove from saved" else "Save product"
-    Button(
+    FilledTonalButton(
         onClick = onToggleSave,
         modifier =
             modifier
@@ -162,6 +165,11 @@ private fun SaveProductControl(
                 .testTag("save-product-control")
                 .semantics { contentDescription = "$label: $productName" },
     ) {
+        Icon(
+            imageVector = if (isSaved) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+            contentDescription = null,
+            modifier = Modifier.padding(end = NutriLogSpacing.small),
+        )
         Text(text = label)
     }
 }
@@ -340,8 +348,10 @@ private fun DetailCard(
     Card(
         colors =
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = MaterialTheme.shapes.large,
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(

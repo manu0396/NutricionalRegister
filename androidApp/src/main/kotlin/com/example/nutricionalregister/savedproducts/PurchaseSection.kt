@@ -7,12 +7,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -53,15 +60,26 @@ public fun PurchaseSection(
         Text(
             text = "Purchase",
             style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
         )
 
         if (state.isPurchased) {
-            Text(
-                text = "Purchased",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.testTag("purchase-purchased"),
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(NutriLogSpacing.small),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "Purchased",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.testTag("purchase-purchased"),
+                )
+            }
         } else if (state.isEligibleForPurchase) {
             PurchaseAction(state = state, onBuy = onBuy)
         } else {
@@ -103,6 +121,11 @@ private fun PurchaseAction(
                 .testTag("purchase-action")
                 .semantics { contentDescription = label },
     ) {
+        Icon(
+            imageVector = Icons.Filled.ShoppingCart,
+            contentDescription = null,
+            modifier = Modifier.padding(end = NutriLogSpacing.small),
+        )
         Text(
             text = if (state.isPending) "Processing" else label,
             maxLines = 1,
@@ -169,6 +192,11 @@ private fun RetryMessage(
                         .heightIn(min = MinimumTouchTarget)
                         .testTag("purchase-retry"),
             ) {
+                Icon(
+                    imageVector = Icons.Filled.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = NutriLogSpacing.extraSmall),
+                )
                 Text(text = "Retry")
             }
         }

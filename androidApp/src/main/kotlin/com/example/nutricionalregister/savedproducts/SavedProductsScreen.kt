@@ -6,15 +6,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.nutricionalregister.domain.product.Product
 import com.example.nutricionalregister.domain.purchase.SavedProduct
@@ -40,8 +50,8 @@ import com.example.nutricionalregister.ui.theme.NutriLogSpacing
  * this destination (FR-007) with a removal control. List entries reuse
  * [ProductResultCard], which shows the offline placeholder image when a thumbnail
  * is missing, so a saved product with no image still renders gracefully. When the
- * list is genuinely empty it shows an explicit "no saved products yet" message with
- * a shortcut that navigates to the Search destination (FR-002).
+ * list is genuinely empty it shows an explicit polished empty state with an icon,
+ * heading, body and shortcut to navigate to the Search destination (FR-002).
  *
  * @param onNavigateToSearch invoked by the empty-state shortcut to switch to the
  *   Search destination (navigation contract rule 6).
@@ -104,7 +114,7 @@ private fun SavedProductsList(
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(NutriLogSpacing.small),
+        verticalArrangement = Arrangement.spacedBy(NutriLogSpacing.medium),
         contentPadding =
             PaddingValues(
                 start = NutriLogSpacing.large,
@@ -115,22 +125,26 @@ private fun SavedProductsList(
         modifier = modifier.testTag("saved-products-list"),
     ) {
         items(items = saved, key = { it.code }) { product ->
-            Column(verticalArrangement = Arrangement.spacedBy(NutriLogSpacing.extraSmall)) {
-                ProductResultCard(
-                    product = product.toProduct(),
-                    onOpen = { onOpen(product.code) },
-                    modifier = Modifier.testTag("saved-product-${product.code}"),
-                )
-                OutlinedButton(
-                    onClick = { onRemove(product.code) },
-                    modifier =
-                        Modifier
-                            .heightIn(min = MinimumTouchTarget)
-                            .testTag("remove-saved-${product.code}"),
-                ) {
-                    Text(text = "Remove")
-                }
-            }
+            ProductResultCard(
+                product = product.toProduct(),
+                onOpen = { onOpen(product.code) },
+                modifier = Modifier.testTag("saved-product-${product.code}"),
+                trailing = {
+                    IconButton(
+                        onClick = { onRemove(product.code) },
+                        modifier =
+                            Modifier
+                                .sizeIn(minWidth = MinimumTouchTarget, minHeight = MinimumTouchTarget)
+                                .testTag("remove-saved-${product.code}"),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = "Remove ${product.name} from saved",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
+            )
         }
     }
 }
@@ -153,16 +167,26 @@ private fun SavedProductsEmptyState(
                     .fillMaxWidth()
                     .padding(NutriLogSpacing.large),
         ) {
+            Icon(
+                imageVector = Icons.Outlined.FavoriteBorder,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(64.dp),
+            )
+            Spacer(modifier = Modifier.height(NutriLogSpacing.small))
             Text(
                 text = "No saved products yet",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.testTag("saved-products-empty"),
             )
             Text(
-                text = "Products you save will appear here, available offline.",
-                style = MaterialTheme.typography.bodyMedium,
+                text = "Save products you want to track and they'll appear here, available offline.",
+                style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
+            Spacer(modifier = Modifier.height(NutriLogSpacing.small))
             Button(
                 onClick = onNavigateToSearch,
                 modifier =
@@ -170,6 +194,11 @@ private fun SavedProductsEmptyState(
                         .heightIn(min = MinimumTouchTarget)
                         .testTag("saved-products-empty-search"),
             ) {
+                Icon(
+                    imageVector = Icons.Outlined.Search,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = NutriLogSpacing.extraSmall),
+                )
                 Text(text = "Search for a product")
             }
         }
