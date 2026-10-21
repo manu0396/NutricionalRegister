@@ -1,0 +1,55 @@
+CREATE TABLE SavedProduct (
+    code TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    brands TEXT,
+    quantity TEXT,
+    nutri_score_grade TEXT,
+    image_thumbnail_url TEXT,
+    saved_at_epoch_millis INTEGER NOT NULL
+);
+
+CREATE TABLE PurchaseRecord (
+    product_code TEXT NOT NULL PRIMARY KEY,
+    transaction_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    purchase_token TEXT,
+    completed_at_epoch_millis INTEGER NOT NULL
+);
+
+upsertSavedProduct:
+INSERT OR REPLACE INTO SavedProduct (
+    code,
+    name,
+    brands,
+    quantity,
+    nutri_score_grade,
+    image_thumbnail_url,
+    saved_at_epoch_millis
+) VALUES (?, ?, ?, ?, ?, ?, ?);
+
+deleteSavedProduct:
+DELETE FROM SavedProduct WHERE code = ?;
+
+selectSavedProducts:
+SELECT * FROM SavedProduct ORDER BY saved_at_epoch_millis DESC;
+
+selectSavedProductByCode:
+SELECT * FROM SavedProduct WHERE code = ?;
+
+upsertPurchaseRecord:
+INSERT OR REPLACE INTO PurchaseRecord (
+    product_code,
+    transaction_id,
+    status,
+    purchase_token,
+    completed_at_epoch_millis
+) VALUES (?, ?, ?, ?, ?);
+
+selectPurchaseRecordByProduct:
+SELECT * FROM PurchaseRecord WHERE product_code = ?;
+
+selectPurchaseRecords:
+SELECT * FROM PurchaseRecord;
+
+selectPurchasedProductCodes:
+SELECT product_code FROM PurchaseRecord;

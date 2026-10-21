@@ -3,6 +3,7 @@ package com.example.nutricionalregister.data
 import android.content.Context
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.example.nutricionalregister.domain.product.EpochClock
+import com.example.nutricionalregister.domain.purchase.PurchaseClient
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
@@ -18,9 +19,16 @@ internal fun createProductHttpClient(): HttpClient =
         }
     }
 
+/**
+ * Builds the shared runtime and wires the new saved-products and purchase
+ * repositories over the same database. The platform [purchaseClient] is supplied
+ * by the composition root (the Android implementation is created in US3), so the
+ * shared code never depends on Google Play Billing directly.
+ */
 public fun createProductSearchRuntime(
     context: Context,
     clock: EpochClock,
+    purchaseClient: PurchaseClient,
     databaseDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ): ProductSearchRuntime {
     val httpClient = createProductHttpClient()
@@ -41,6 +49,17 @@ public fun createProductSearchRuntime(
         recentSearchRepository =
             RecentSearchRepositoryImpl(
                 database = database,
+                databaseDispatcher = databaseDispatcher,
+            ),
+        savedProductRepository =
+            SavedProductRepositoryImpl(
+                database = database,
+                databaseDispatcher = databaseDispatcher,
+            ),
+        purchaseRepository =
+            PurchaseRepositoryImpl(
+                database = database,
+                client = purchaseClient,
                 databaseDispatcher = databaseDispatcher,
             ),
         closeResources = {
