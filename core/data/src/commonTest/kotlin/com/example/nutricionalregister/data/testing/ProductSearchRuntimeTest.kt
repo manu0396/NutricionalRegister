@@ -1,6 +1,11 @@
 package com.example.nutricionalregister.data.testing
 
 import com.example.nutricionalregister.data.ProductSearchRuntime
+import com.example.nutricionalregister.domain.diary.DayBoundaryProvider
+import com.example.nutricionalregister.domain.diary.DiaryEntry
+import com.example.nutricionalregister.domain.diary.DiaryRepository
+import com.example.nutricionalregister.domain.diary.NutritionGoal
+import com.example.nutricionalregister.domain.diary.NutritionGoalRepository
 import com.example.nutricionalregister.domain.product.Product
 import com.example.nutricionalregister.domain.product.ProductSearchOutcome
 import com.example.nutricionalregister.domain.product.ProductSearchRepository
@@ -31,6 +36,9 @@ class ProductSearchRuntimeTest {
                 recentSearchRepository = recentRepository,
                 savedProductRepository = StubSavedProductRepository,
                 purchaseRepository = StubPurchaseRepository,
+                diaryRepository = StubDiaryRepository,
+                nutritionGoalRepository = StubNutritionGoalRepository,
+                dayBoundaryProvider = StubDayBoundaryProvider,
                 closeResources = { closeCalls += 1 },
             )
 
@@ -39,6 +47,9 @@ class ProductSearchRuntimeTest {
         assertSame(recentRepository, runtime.recentSearchRepository)
         assertSame(StubSavedProductRepository, runtime.savedProductRepository)
         assertSame(StubPurchaseRepository, runtime.purchaseRepository)
+        assertSame(StubDiaryRepository, runtime.diaryRepository)
+        assertSame(StubNutritionGoalRepository, runtime.nutritionGoalRepository)
+        assertSame(StubDayBoundaryProvider, runtime.dayBoundaryProvider)
         assertEquals(0, closeCalls)
 
         // WHEN the runtime is closed twice
@@ -85,4 +96,28 @@ private object StubPurchaseRepository : PurchaseRepository {
     override fun observePurchasedCodes(): Flow<Set<String>> = flowOf(emptySet())
 
     override suspend fun reconcile() = Unit
+}
+
+private object StubDiaryRepository : DiaryRepository {
+    override fun observeEntriesForDay(dayEpochMillis: Long): Flow<List<DiaryEntry>> = flowOf(emptyList())
+
+    override fun observeEntriesForWeek(dayEpochMillis: Long): Flow<List<DiaryEntry>> = flowOf(emptyList())
+
+    override suspend fun addEntry(entry: DiaryEntry): Long = 0L
+
+    override suspend fun updateEntry(entry: DiaryEntry) = Unit
+
+    override suspend fun removeEntry(id: Long) = Unit
+}
+
+private object StubNutritionGoalRepository : NutritionGoalRepository {
+    override fun observeGoal(): Flow<NutritionGoal> = flowOf(NutritionGoal())
+
+    override suspend fun saveGoal(goal: NutritionGoal) = Unit
+}
+
+private object StubDayBoundaryProvider : DayBoundaryProvider {
+    override fun startOfDay(epochMillis: Long): Long = epochMillis
+
+    override fun addDays(dayStartEpochMillis: Long, days: Int): Long = dayStartEpochMillis
 }

@@ -33,6 +33,7 @@ public fun createProductSearchRuntime(
     val httpClient = createProductHttpClient()
     val databaseDriver = createProductDatabaseDriver()
     val database = ProductDatabase(databaseDriver)
+    val dayBoundaryProvider = SystemDayBoundaryProvider()
     return ProductSearchRuntime(
         productSearchRepository =
             ProductSearchRepositoryImpl(
@@ -61,6 +62,18 @@ public fun createProductSearchRuntime(
                 client = purchaseClient,
                 databaseDispatcher = databaseDispatcher,
             ),
+        diaryRepository =
+            DiaryRepositoryImpl(
+                database = database,
+                dayBoundaryProvider = dayBoundaryProvider,
+                databaseDispatcher = databaseDispatcher,
+            ),
+        nutritionGoalRepository =
+            NutritionGoalRepositoryImpl(
+                database = database,
+                databaseDispatcher = databaseDispatcher,
+            ),
+        dayBoundaryProvider = dayBoundaryProvider,
         closeResources = {
             httpClient.close()
             databaseDriver.close()
