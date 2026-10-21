@@ -75,8 +75,8 @@ project does not author, and falls back to a portable `perl -CSD` scan when `rg`
 is absent; `ios.yml` also installs `ripgrep`. After the fix, launched from a
 clean checkout on GitHub-hosted runners:
 
-- `android-verification`: **pass**, 5m55s.
-- `ios-verification`: **pass**, 5m7s.
+- `android-verification`: **pass**, 4m21s–5m55s across runs.
+- `ios-verification`: **pass**, 5m7s–8m32s across runs.
 - `review-activity` / `review-activity-head`: fail by design — the independent
   human review gate is not satisfiable for a solo maintainer (see ADR-0012);
   it is unrelated to the verification result.
