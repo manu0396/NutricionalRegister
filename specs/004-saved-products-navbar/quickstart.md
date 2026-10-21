@@ -64,9 +64,24 @@ Expected: `BUILD SUCCESSFUL`, exit 0, coverage gate (>=80% line) green, and
 - `xcodebuild -scheme iosApp` (iOS Simulator): `BUILD SUCCEEDED`, 0 errors.
 - Release APK: 12,520,644 bytes; debug APK: 17,167,130 bytes.
 
-> Hosted CI durations (T058) are recorded by the pull-request workflow once the
-> branch is pushed; the local gate above is the in-repo measurable equivalent and
-> stays within the project's under-10-minute target.
+### Hosted CI results (T058, 2026-10-21, PR #3)
+
+The plain-text gate failed on the first push because `ripgrep` is not guaranteed
+on the macOS runner and because the `rg` scan of `.` silently skips hidden
+directories (`.github`, `.specify`). `scripts/check-no-emoji.sh` now derives its
+file set from `git ls-files -z` (skipping binaries by a NUL test), excludes
+vendored spec-kit tooling (`.github/skills/**`, `.specify/templates/**`) that the
+project does not author, and falls back to a portable `perl -CSD` scan when `rg`
+is absent; `ios.yml` also installs `ripgrep`. After the fix, launched from a
+clean checkout on GitHub-hosted runners:
+
+- `android-verification`: **pass**, 5m55s.
+- `ios-verification`: **pass**, 5m7s.
+- `review-activity` / `review-activity-head`: fail by design — the independent
+  human review gate is not satisfiable for a solo maintainer (see ADR-0012);
+  it is unrelated to the verification result.
+
+Both verification jobs are within the project's under-10-minute target.
 
 ## 3. Run the Android instrumented tests
 
