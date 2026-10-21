@@ -30,28 +30,39 @@ import com.example.nutricionalregister.ui.theme.NutriLogSpacing
  *
  * Shows a fixed-size thumbnail, the product name, a secondary brand/quantity line
  * and the code, with a Nutri-Score badge pinned to the trailing edge when the
- * catalogue supplies a grade. The card uses a low tonal surface so result lists
- * read as a set of cards rather than blended into the background.
+ * catalogue supplies a grade. The card uses a lightly elevated surface so result
+ * lists read as a set of cards rather than blended into the background.
  *
  * The whole card is clickable and carries the "View {name}, code {code}"
  * description for screen readers; the name and code Text nodes remain individually
  * discoverable because the description is added without merging descendants.
+ *
+ * @param trailing optional trailing action rendered after the Nutri-Score badge,
+ *   such as a remove control. It is placed outside the card's clickable area so
+ *   activating it does not open the product.
  */
 @Composable
 public fun ProductResultCard(
     product: Product,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     Card(
         colors =
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             ),
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = 1.dp,
+                pressedElevation = 2.dp,
+            ),
+        shape = MaterialTheme.shapes.large,
         modifier =
             modifier
                 .fillMaxWidth()
-                .heightIn(min = 88.dp)
+                .heightIn(min = 96.dp)
                 .clickable(onClick = onOpen)
                 .semantics { contentDescription = "View ${product.name}, code ${product.code}" },
     ) {
@@ -101,6 +112,7 @@ public fun ProductResultCard(
             ) {
                 NutriScoreBadge(grade = product.nutriScoreGrade)
             }
+            trailing?.invoke()
         }
     }
 }
