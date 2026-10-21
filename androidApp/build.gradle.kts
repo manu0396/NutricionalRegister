@@ -16,6 +16,7 @@ android {
 dependencies {
     implementation(project(":core:data"))
     implementation(project(":feature:diary"))
+    implementation(project(":feature:savedproducts"))
     implementation(project(":feature:scan"))
     implementation(project(":feature:search"))
     implementation(project(":feature:summary"))
@@ -27,6 +28,7 @@ dependencies {
     implementation(libs.androidx.material.icons.core)
     implementation(libs.compose.ui)
     implementation(libs.compose.uiToolingPreview)
+    implementation(libs.navigation.compose)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
     androidTestImplementation(libs.compose.ui.test.junit4.android)
