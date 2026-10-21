@@ -78,3 +78,11 @@
 - [ ] **T048** Run the coverage gate, the architecture tests, ktlint, lint and the plain-text gate
 - [ ] **T049** Review every screen in light and dark mode against the design rules
 - [ ] **T050** Mark the spec as implemented, update the tasks and the AI log, and open the pull request
+
+## Phase 8: Findings raised by the brainstorming
+
+- [ ] **T051** Fix the Konsist architecture test so it matches the real package roots; the rule currently matches no package and can never fail
+- [ ] **T052** Move the purchase surface out of the food screens into the More destination as a single premium unlock, and stop selling individual catalogue products
+- [ ] **T053** Replace the saturated pastel product placeholder with a neutral monogram so the lists read as product data rather than as a colour chart
+- [ ] **T054** Replace the two inconsistent app bars with the single shared app bar
+- [ ] **T055** Complete the type scale so no slot falls back to the stock Material 3 value, and give the numeric slots a distinct treatment

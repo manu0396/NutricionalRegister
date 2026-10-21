@@ -39,10 +39,10 @@ One logged food.
 | `mealType` | MealType | The meal the entry belongs to |
 | `quantityGrams` | Double | Logged quantity in grams; must be > 0 |
 | `unit` | String | "g" by default |
-| `energyKcal` | Double | Snapshot of calories for the logged quantity |
-| `proteinGrams` | Double | Snapshot of protein for the logged quantity |
-| `carbohydrateGrams` | Double | Snapshot of carbohydrates for the logged quantity |
-| `fatGrams` | Double | Snapshot of fat for the logged quantity |
+| `energyKcal` | Double? | Snapshot of calories for the logged quantity |
+| `proteinGrams` | Double? | Snapshot of protein for the logged quantity |
+| `carbohydrateGrams` | Double? | Snapshot of carbohydrates for the logged quantity |
+| `fatGrams` | Double? | Snapshot of fat for the logged quantity |
 | `loggedAtEpochMillis` | Long | When the entry was logged |
 | `dayEpochMillis` | Long | Local midnight of the day the entry belongs to |
 
@@ -50,19 +50,35 @@ Validation: `productCode` and `productName` are not blank, `quantityGrams` is
 finite and greater than zero, and the nutrient values are finite and not
 negative.
 
+A nutrient is nullable because the catalogue does not report every nutrient for
+every product. `null` means "not reported", which is a different statement from
+"zero".
+
 ### NutritionTotals (domain value object)
 
-The sum of the nutrition of a set of entries.
+The nutrition of a set of entries.
 
-| Attribute | Type |
-| --- | --- |
-| `energyKcal` | Double |
-| `proteinGrams` | Double |
-| `carbohydrateGrams` | Double |
-| `fatGrams` | Double |
+| Attribute | Type | Notes |
+| --- | --- | --- |
+| `energyKcal` | Double? | `null` when no entry reports it |
+| `proteinGrams` | Double? | `null` when no entry reports it |
+| `carbohydrateGrams` | Double? | `null` when no entry reports it |
+| `fatGrams` | Double? | `null` when no entry reports it |
+| `incomplete` | Set<Nutrient> | Components that only some entries report |
 
-Operations: `plus(other)` for addition and `scaledBy(factor)` for scaling a
-per-100 g basis to a logged quantity. The empty total is all zeroes.
+Operations: `plus(other)` for addition, `scaledBy(factor)` for scaling, and
+`remainingAgainst(goal)` for the amount left before the goal is reached.
+
+The aggregation rule is conservative about honesty and generous about
+usefulness:
+
+- No entry reports a nutrient: the total is **unknown** (`null`), never zero.
+- Some entries report it and others do not: the total is the sum of the
+  reported values and the nutrient is listed in `incomplete`, so the UI shows a
+  lower bound and says which nutrients are incomplete.
+- Every entry reports it: the total is exact and `incomplete` is empty.
+
+The empty total is a known zero: nothing has been eaten yet.
 
 ### NutritionGoal (domain entity)
 
@@ -75,7 +91,7 @@ The daily targets. A single record.
 | `carbohydrateGrams` | Int | 220 |
 | `fatGrams` | Int | 70 |
 
-### DailySummary (feature:summary)
+### DailySummary (core:domain)
 
 The Today screen's data.
 
@@ -89,7 +105,7 @@ The Today screen's data.
 | `goal` | NutritionGoal |
 | `remaining` | NutritionTotals (goal minus totals, floored at zero) |
 
-### WeeklySummary (feature:summary)
+### WeeklySummary (core:domain)
 
 The last seven days.
 
@@ -105,7 +121,7 @@ UI can show it as "no entries" rather than as "0 kcal eaten".
 
 ## Persistence
 
-### New tables (SQLDelight, schema version 2)
+### New tables (SQLDelight, schema version 3)
 
 ```sql
 CREATE TABLE DiaryEntry (
@@ -117,15 +133,15 @@ CREATE TABLE DiaryEntry (
     meal_type TEXT NOT NULL,
     quantity_grams REAL NOT NULL,
     unit TEXT NOT NULL DEFAULT 'g',
-    energy_kcal REAL NOT NULL,
-    protein_grams REAL NOT NULL,
-    carbohydrate_grams REAL NOT NULL,
-    fat_grams REAL NOT NULL,
+    energy_kcal REAL,
+    protein_grams REAL,
+    carbohydrate_grams REAL,
+    fat_grams REAL,
     logged_at_epoch_millis INTEGER NOT NULL,
     day_epoch_millis INTEGER NOT NULL
 );
 
-CREATE INDEX diary_entry_day ON DiaryEntry(day_epoch_millis);
+CREATE INDEX diary_entry_day_index ON DiaryEntry(day_epoch_millis);
 
 CREATE TABLE NutritionGoal (
     singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
@@ -136,11 +152,18 @@ CREATE TABLE NutritionGoal (
 );
 ```
 
+The nutrient columns are nullable: `null` means the catalogue did not report the
+nutrient for that product.
+
 ### Migration
 
-`2.sqm` contains exactly the two `CREATE TABLE` statements and the index. It is
-additive: version 1 databases (catalogue cache, saved products, purchase records,
-recent searches) migrate without any data change.
+The schema goes from version 2 to version 3. `2.sqm` contains exactly the two
+`CREATE TABLE` statements and the index. It is additive: version 2 databases
+(catalogue cache, saved products, purchase records, recent searches) migrate
+without any data change. `1.sqm` (version 1 to 2) is unchanged, so a database
+created by an earlier release still migrates in one step.
+
+`verifyMigrations` stays enabled and checks the whole chain.
 
 ### Unchanged
 

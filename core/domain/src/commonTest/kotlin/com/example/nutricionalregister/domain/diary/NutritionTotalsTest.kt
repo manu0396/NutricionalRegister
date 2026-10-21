@@ -30,6 +30,7 @@ class NutritionTotalsTest {
         assertEquals(30.0, totals.proteinGrams)
         assertEquals(20.0, totals.carbohydrateGrams)
         assertEquals(10.0, totals.fatGrams)
+        assertTrue(totals.isComplete)
     }
 
     @Test
@@ -37,8 +38,8 @@ class NutritionTotalsTest {
         val totals =
             NutritionTotals.fromEntries(
                 listOf(
-                    entry(energy = 100.0, protein = 10.0, carbohydrate = 5.0, fat = 2.0),
-                    entry(energy = 250.0, protein = 20.0, carbohydrate = 15.0, fat = null),
+                    entry(energy = 100.0, fat = null),
+                    entry(energy = 250.0, fat = null),
                 ),
             )
         assertEquals(350.0, totals.energyKcal)
@@ -47,10 +48,32 @@ class NutritionTotalsTest {
     }
 
     @Test
-    fun `adding an unknown component keeps it unknown`() {
+    fun `a nutrient only some entries report is a lower bound`() {
+        val totals =
+            NutritionTotals.fromEntries(
+                listOf(
+                    entry(energy = 100.0, fat = 2.0),
+                    entry(energy = 250.0, fat = null),
+                ),
+            )
+        assertEquals(2.0, totals.fatGrams)
+        assertTrue(Nutrient.FAT in totals.incomplete)
+        assertTrue(!totals.isComplete)
+    }
+
+    @Test
+    fun `adding an unknown component makes the sum a lower bound`() {
         val sum = NutritionTotals(energyKcal = 100.0, fatGrams = null) + NutritionTotals(energyKcal = 50.0, fatGrams = 5.0)
         assertEquals(150.0, sum.energyKcal)
+        assertEquals(5.0, sum.fatGrams)
+        assertTrue(Nutrient.FAT in sum.incomplete)
+    }
+
+    @Test
+    fun `adding two unknown components leaves the component unknown`() {
+        val sum = NutritionTotals(fatGrams = null) + NutritionTotals(fatGrams = null)
         assertNull(sum.fatGrams)
+        assertTrue(Nutrient.FAT !in sum.incomplete)
     }
 
     @Test
@@ -61,11 +84,14 @@ class NutritionTotalsTest {
     }
 
     @Test
-    fun `scaling multiplies every known component`() {
-        val totals = NutritionTotals(energyKcal = 200.0, proteinGrams = 20.0).scaledBy(1.5)
+    fun `scaling multiplies every known component and keeps the incomplete ones`() {
+        val totals =
+            NutritionTotals(energyKcal = 200.0, proteinGrams = 20.0, incomplete = setOf(Nutrient.PROTEIN))
+                .scaledBy(1.5)
         assertEquals(300.0, totals.energyKcal)
         assertEquals(30.0, totals.proteinGrams)
         assertNull(totals.carbohydrateGrams)
+        assertTrue(Nutrient.PROTEIN in totals.incomplete)
     }
 
     @Test
@@ -101,7 +127,7 @@ class NutritionTotalsTest {
 
     private fun entry(
         energy: Double?,
-        protein: Double?,
+        protein: Double? = null,
         carbohydrate: Double? = null,
         fat: Double? = null,
     ): DiaryEntry =

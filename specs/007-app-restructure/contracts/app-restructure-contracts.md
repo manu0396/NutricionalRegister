@@ -41,36 +41,64 @@ public data class DiaryEntry(
     val mealType: MealType,
     val quantityGrams: Double,
     val unit: String = "g",
-    val energyKcal: Double = 0.0,
-    val proteinGrams: Double = 0.0,
-    val carbohydrateGrams: Double = 0.0,
-    val fatGrams: Double = 0.0,
+    val energyKcal: Double? = null,
+    val proteinGrams: Double? = null,
+    val carbohydrateGrams: Double? = null,
+    val fatGrams: Double? = null,
     val loggedAtEpochMillis: Long = 0,
     val dayEpochMillis: Long = 0,
 )
 ```
 
 Validation: `productCode` and `productName` are not blank; `quantityGrams` is
-finite and greater than zero; every nutrient value is finite and not negative.
+finite and greater than zero; every nutrient value is finite and not negative
+when it is present.
 
-### 1.3 `NutritionTotals`
+A nutrient is `null` when the catalogue does not report it. That is a different
+statement from zero, and the UI never turns one into the other.
+
+### 1.3 `Nutrient`
 
 ```kotlin
-public data class NutritionTotals(
-    val energyKcal: Double = 0.0,
-    val proteinGrams: Double = 0.0,
-    val carbohydrateGrams: Double = 0.0,
-    val fatGrams: Double = 0.0,
-) {
-    public operator fun plus(other: NutritionTotals): NutritionTotals
-    public fun scaledBy(factor: Double): NutritionTotals
+public enum class Nutrient {
+    ENERGY,
+    PROTEIN,
+    CARBOHYDRATE,
+    FAT,
 }
 ```
 
-Contract: `plus` is component-wise and commutative; `scaledBy` multiplies every
-component by `factor`.
+### 1.4 `NutritionTotals`
 
-### 1.4 `NutritionGoal`
+```kotlin
+public data class NutritionTotals(
+    val energyKcal: Double? = null,
+    val proteinGrams: Double? = null,
+    val carbohydrateGrams: Double? = null,
+    val fatGrams: Double? = null,
+    val incomplete: Set<Nutrient> = emptySet(),
+) {
+    public operator fun plus(other: NutritionTotals): NutritionTotals
+    public fun scaledBy(factor: Double): NutritionTotals
+    public fun remainingAgainst(goal: NutritionGoal): NutritionTotals
+    public val isComplete: Boolean
+
+    public companion object {
+        public val ZERO: NutritionTotals
+        public fun fromEntries(entries: List<DiaryEntry>): NutritionTotals
+    }
+}
+```
+
+Contract: `plus` is component-wise and commutative. A component is `null` when
+nothing reports it, and is listed in `incomplete` when only some of the
+contributions report it, so the UI can show a lower bound instead of a
+fabricated number. `scaledBy` multiplies every known component by `factor` and
+keeps the incomplete markers. `remainingAgainst` never returns a negative
+amount and keeps the incomplete markers. `ZERO` is the total of nothing: every
+component is a known zero.
+
+### 1.5 `NutritionGoal`
 
 ```kotlin
 public data class NutritionGoal(
@@ -83,11 +111,12 @@ public data class NutritionGoal(
 
 Contract: every target is greater than zero.
 
-### 1.5 `DiaryRepository`
+### 1.6 `DiaryRepository`
 
 ```kotlin
 public interface DiaryRepository {
     public fun observeEntriesForDay(dayEpochMillis: Long): Flow<List<DiaryEntry>>
+    public fun observeEntriesForWeek(dayEpochMillis: Long): Flow<List<DiaryEntry>>
     public suspend fun addEntry(entry: DiaryEntry): Long
     public suspend fun updateEntry(entry: DiaryEntry)
     public suspend fun removeEntry(id: Long)
@@ -95,10 +124,11 @@ public interface DiaryRepository {
 ```
 
 Contract: `observeEntriesForDay` emits the entries of exactly that local day,
-ordered by log time, and re-emits on every change. `addEntry` returns the new
-row id. `removeEntry` on an unknown id is a no-op.
+ordered by log time, and re-emits on every change. `observeEntriesForWeek`
+emits the entries of the seven local days that end with the given day.
+`addEntry` returns the new row id. `removeEntry` on an unknown id is a no-op.
 
-### 1.6 `NutritionGoalRepository`
+### 1.7 `NutritionGoalRepository`
 
 ```kotlin
 public interface NutritionGoalRepository {
@@ -110,51 +140,70 @@ public interface NutritionGoalRepository {
 Contract: `observeGoal` emits the stored goal, or the default goal when nothing
 is stored yet.
 
-### 1.7 `DayKey`
+### 1.8 `DayBoundaryProvider` and `DiaryDay`
 
 ```kotlin
-public object DayKey {
+public interface DayBoundaryProvider {
     public fun startOfDay(epochMillis: Long): Long
-    public fun daysBetween(startEpochMillis: Long, endEpochMillis: Long): Int
+    public fun addDays(dayStartEpochMillis: Long, days: Int): Long
+}
+
+public object DiaryDay {
+    public fun lastDays(
+        dayBoundaryProvider: DayBoundaryProvider,
+        todayEpochMillis: Long,
+        count: Int,
+    ): List<Long>
 }
 ```
 
 Contract: `startOfDay` returns the local midnight of the day containing the
-timestamp. `daysBetween` returns the number of local-day boundaries between two
-timestamps.
+timestamp. `addDays` steps calendar days, so a 23- or 25-hour daylight-saving
+day is handled exactly. The provider is implemented per platform: `java.util.Calendar`
+on Android and `NSCalendar` on iOS. `lastDays` returns `count` local days,
+oldest first, ending with the day containing `todayEpochMillis`.
 
-## 2. Feature - `feature:diary`
+The provider is an interface rather than a static helper because the shared
+modules have no time-zone library, and because it keeps the day arithmetic
+testable with a fixed day length.
+
+### 1.9 `NutritionCalculator`
 
 ```kotlin
-public data class DiaryState(
-    val dayEpochMillis: Long = 0,
-    val entriesByMeal: Map<MealType, List<DiaryEntry>> = emptyMap(),
-    val totals: NutritionTotals = NutritionTotals(),
-    val mealTotals: Map<MealType, NutritionTotals> = emptyMap(),
-    val goal: NutritionGoal = NutritionGoal(),
-    val isLoading: Boolean = true,
-)
+public object NutritionCalculator {
+    public fun contribution(
+        nutritionValues: List<NutritionValue>,
+        quantityGrams: Double,
+    ): NutritionTotals
 
-public class DiaryViewModel(
-    private val diaryRepository: DiaryRepository,
-    private val goalRepository: NutritionGoalRepository,
-    private val clock: EpochClock,
-    private val scope: CoroutineScope,
-) {
-    public val state: StateFlow<DiaryState>
-    public fun refresh()
-    public fun removeEntry(id: Long)
-    public fun updateGoal(goal: NutritionGoal)
+    public fun entryFor(
+        product: Product,
+        mealType: MealType,
+        quantityGrams: Double,
+        loggedAtEpochMillis: Long,
+        dayEpochMillis: Long,
+    ): DiaryEntry
 }
 ```
 
-Contract: the state is a single immutable value. `refresh` re-reads the current
-day, so a day boundary crossed while the app is open is picked up. The totals in
-the state are always the sum of the entries in the state.
+Contract: the quantity is always expressed in grams. A value reported per
+100 g is scaled by `quantityGrams / 100`; a value reported per serving is
+scaled by `quantityGrams / servingGrams` when the serving size can be read
+from the product's serving description, and stays unknown when it cannot. A
+product with no nutrition values contributes nothing but is still logged.
 
-## 3. Feature - `feature:summary`
+### 1.10 Summaries - `core:domain`
 
 ```kotlin
+public data class DailySummary(
+    val dayEpochMillis: Long,
+    val entries: List<DiaryEntry>,
+    val entriesByMeal: Map<MealType, List<DiaryEntry>>,
+    val totals: NutritionTotals,
+    val mealTotals: Map<MealType, NutritionTotals>,
+    val goal: NutritionGoal,
+)
+
 public data class DaySummary(
     val dayEpochMillis: Long,
     val entryCount: Int,
@@ -169,6 +218,8 @@ public data class WeeklySummary(
 )
 
 public object SummaryCalculator {
+    public const val DAYS_IN_WEEK: Int = 7
+
     public fun daily(
         dayEpochMillis: Long,
         entries: List<DiaryEntry>,
@@ -176,15 +227,76 @@ public object SummaryCalculator {
     ): DailySummary
 
     public fun weekly(
+        dayBoundaryProvider: DayBoundaryProvider,
         todayEpochMillis: Long,
         entries: List<DiaryEntry>,
     ): WeeklySummary
 }
 ```
 
-Contract: `weekly` always returns exactly seven days, oldest first, ending with
-today. The average is over the days that have entries only; a day with no entries
-is `isEmpty = true` and is never counted as a zero-intake day in the average.
+Contract: `daily` always reports every meal of the day, including the meals
+with no entries. `weekly` always returns exactly seven days, oldest first,
+ending with today. The average is over the days that have entries only; a day
+with no entries is `isEmpty = true` and is never counted as a zero-intake day
+in the average.
+
+The summaries live in `core:domain` and not in `feature:summary`: the daily
+summary is needed by the diary feature, and the module policy forbids a
+feature module from depending on another feature module.
+
+## 2. Feature - `feature:diary`
+
+```kotlin
+public data class DiaryState(
+    val dayEpochMillis: Long = 0,
+    val entriesByMeal: Map<MealType, List<DiaryEntry>> = emptyMap(),
+    val totals: NutritionTotals = NutritionTotals.ZERO,
+    val mealTotals: Map<MealType, NutritionTotals> = emptyMap(),
+    val goal: NutritionGoal = NutritionGoal(),
+    val isLoading: Boolean = true,
+)
+
+public class DiaryViewModel(
+    private val diaryRepository: DiaryRepository,
+    private val goalRepository: NutritionGoalRepository,
+    private val dayBoundaryProvider: DayBoundaryProvider,
+    private val clock: EpochClock,
+    private val scope: CoroutineScope,
+) {
+    public val state: StateFlow<DiaryState>
+    public fun refresh()
+    public fun log(product: Product, mealType: MealType, quantityGrams: Double)
+    public fun removeEntry(id: Long)
+    public fun updateGoal(goal: NutritionGoal)
+    public fun clear()
+}
+```
+
+Contract: the state is a single immutable value. `refresh` re-reads the current
+day, so a day boundary crossed while the app is open is picked up. The totals in
+the state are always the sum of the entries in the state. `log` snapshots the
+product name and its nutrition values, so a later catalogue change cannot
+rewrite what the user ate.
+
+## 3. Feature - `feature:summary`
+
+```kotlin
+public class SummaryViewModel(
+    private val diaryRepository: DiaryRepository,
+    private val dayBoundaryProvider: DayBoundaryProvider,
+    private val clock: EpochClock,
+    private val scope: CoroutineScope,
+) {
+    public val weeklySummary: StateFlow<WeeklySummary?>
+    public fun refresh()
+    public fun clear()
+}
+```
+
+Contract: the summary is `null` until the first week has been read, so the
+screen can show a progress indicator instead of an empty week that is not
+empty yet. The summary is computed from the stored entries on every change and
+is never cached in the database.
 
 ## 4. Navigation - `androidApp`
 
