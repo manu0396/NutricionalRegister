@@ -1,5 +1,3 @@
-@file:Suppress("FunctionName", "ktlint:standard:function-naming")
-
 package com.example.nutricionalregister.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -9,60 +7,97 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-/** Light Material 3 colour scheme for NutriLog. */
+/**
+ * Light Material 3 colour scheme for NutriLog.
+ *
+ * Surfaces are white and near-white, the canvas is a very light grey and the
+ * accent is the only saturated colour in the scheme. Outline roles are set
+ * explicitly because several surfaces are separated by a hairline rule rather
+ * than by a shadow.
+ */
 private val LightColorScheme =
     lightColorScheme(
-        primary = Green40,
+        primary = Evergreen40,
         onPrimary = Color.White,
-        primaryContainer = Green90,
-        onPrimaryContainer = Green10,
-        secondary = Amber40,
+        primaryContainer = Evergreen90,
+        onPrimaryContainer = Evergreen10,
+        secondary = Sage40,
         onSecondary = Color.White,
-        secondaryContainer = Amber90,
-        onSecondaryContainer = Amber10,
-        tertiary = Teal40,
+        secondaryContainer = Sage90,
+        onSecondaryContainer = Sage10,
+        tertiary = Clay40,
         onTertiary = Color.White,
-        tertiaryContainer = Teal90,
-        onTertiaryContainer = Teal10,
+        tertiaryContainer = Clay90,
+        onTertiaryContainer = Clay10,
         error = Red40,
         onError = Color.White,
         errorContainer = Red90,
         onErrorContainer = Red10,
-        background = NeutralLightSurface,
+        background = NeutralLightBackground,
         onBackground = NeutralLightOnSurface,
         surface = NeutralLightSurface,
         onSurface = NeutralLightOnSurface,
         surfaceVariant = NeutralLightSurfaceVariant,
         onSurfaceVariant = NeutralLightOnSurfaceVariant,
+        surfaceContainer = NeutralLightSurfaceContainer,
+        surfaceContainerHigh = NeutralLightSurfaceVariant,
+        surfaceContainerHighest = NeutralLightSurfaceVariant,
+        surfaceContainerLow = NeutralLightSurface,
+        surfaceContainerLowest = NeutralLightSurface,
+        surfaceBright = NeutralLightSurface,
+        surfaceDim = NeutralLightSurfaceVariant,
         outline = NeutralLightOutline,
+        outlineVariant = NeutralLightOutlineVariant,
+        inverseSurface = NeutralLightOnSurface,
+        inverseOnSurface = NeutralLightSurface,
+        inversePrimary = Evergreen80,
+        scrim = Color.Black,
     )
 
-/** Dark Material 3 colour scheme for NutriLog. */
+/**
+ * Dark Material 3 colour scheme for NutriLog.
+ *
+ * The dark scheme is a true dark theme rather than a dimmed light theme: the
+ * canvas is near-black, surfaces are separated by hairline outlines and the
+ * accent is lightened so it keeps its contrast on a dark background.
+ */
 private val DarkColorScheme =
     darkColorScheme(
-        primary = Green80,
-        onPrimary = Green20,
-        primaryContainer = Green30,
-        onPrimaryContainer = Green100,
-        secondary = Amber80,
-        onSecondary = Amber20,
-        secondaryContainer = Amber30,
-        onSecondaryContainer = Amber90,
-        tertiary = Teal80,
-        onTertiary = Teal20,
-        tertiaryContainer = Teal30,
-        onTertiaryContainer = Teal90,
+        primary = Evergreen80,
+        onPrimary = Evergreen20,
+        primaryContainer = Evergreen30,
+        onPrimaryContainer = Evergreen90,
+        secondary = Sage80,
+        onSecondary = Sage20,
+        secondaryContainer = Sage30,
+        onSecondaryContainer = Sage90,
+        tertiary = Clay80,
+        onTertiary = Clay20,
+        tertiaryContainer = Clay30,
+        onTertiaryContainer = Clay90,
         error = Red80,
         onError = Red20,
         errorContainer = Red30,
         onErrorContainer = Red90,
-        background = NeutralDarkSurface,
+        background = NeutralDarkBackground,
         onBackground = NeutralDarkOnSurface,
         surface = NeutralDarkSurface,
         onSurface = NeutralDarkOnSurface,
         surfaceVariant = NeutralDarkSurfaceVariant,
         onSurfaceVariant = NeutralDarkOnSurfaceVariant,
+        surfaceContainer = NeutralDarkSurfaceContainer,
+        surfaceContainerHigh = NeutralDarkSurfaceVariant,
+        surfaceContainerHighest = NeutralDarkSurfaceVariant,
+        surfaceContainerLow = NeutralDarkSurface,
+        surfaceContainerLowest = NeutralDarkBackground,
+        surfaceBright = NeutralDarkSurfaceVariant,
+        surfaceDim = NeutralDarkBackground,
         outline = NeutralDarkOutline,
+        outlineVariant = NeutralDarkOutlineVariant,
+        inverseSurface = NeutralDarkOnSurface,
+        inverseOnSurface = NeutralDarkSurface,
+        inversePrimary = Evergreen40,
+        scrim = Color.Black,
     )
 
 /**
