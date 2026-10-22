@@ -46,11 +46,6 @@ public class NutriLogNavigator internal constructor(
         navController.navigate(NutriLogRoutes.WEEKLY)
     }
 
-    /** Opens the conversational assistant. */
-    public fun openCoach() {
-        navController.navigate(NutriLogRoutes.COACH)
-    }
-
     /** Returns to the screen that opened the current one. */
     public fun back() {
         navController.popBackStack()

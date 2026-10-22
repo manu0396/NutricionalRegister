@@ -16,7 +16,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -60,7 +59,6 @@ import com.example.nutricionalregister.ui.theme.NutriLogSpacing
  *
  * @param goal the daily goal the user has set.
  * @param onGoalChanged invoked with the goal that carries the value the user changed.
- * @param onOpenCoach invoked when the coach row is tapped.
  * @param purchaseContent the premium unlock, or null when the build has none.
  * @param onOpenPrivacyPolicy invoked when the privacy policy row is tapped.
  * @param contentPadding the padding of the enclosing shell.
@@ -70,7 +68,6 @@ import com.example.nutricionalregister.ui.theme.NutriLogSpacing
 public fun MoreScreen(
     goal: NutritionGoal,
     onGoalChanged: (NutritionGoal) -> Unit,
-    onOpenCoach: () -> Unit,
     purchaseContent: (@Composable () -> Unit)?,
     onOpenPrivacyPolicy: () -> Unit,
     contentPadding: PaddingValues,
@@ -96,14 +93,6 @@ public fun MoreScreen(
             GoalSection(
                 goal = goal,
                 onGoalChanged = onGoalChanged,
-            )
-
-            MoreRow(
-                title = "Coach",
-                subtitle = "Log what you ate by telling the coach about it",
-                icon = Icons.Filled.Person,
-                onClick = onOpenCoach,
-                modifier = Modifier.testTag("more-coach-row"),
             )
 
             if (purchaseContent != null) {

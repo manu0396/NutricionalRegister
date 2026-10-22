@@ -50,8 +50,12 @@ public object SummaryCalculator {
     }
 
     /**
-     * The summary of the seven local days that end with the day containing
-     * [todayEpochMillis].
+     * The summary of the week the user is living in.
+     *
+     * The week is the one the device's calendar starts and is exactly seven
+     * days: the days before today carry what was logged and the days after
+     * today are marked as still to come, which is what "still to come"
+     * means: the user cannot have logged into the future yet.
      *
      * The seven days are always returned, even the ones without entries, and
      * the average is taken over the days that have entries only: a day without
@@ -62,7 +66,9 @@ public object SummaryCalculator {
         todayEpochMillis: Long,
         entries: List<DiaryEntry>,
     ): WeeklySummary {
-        val days = DiaryDay.lastDays(dayBoundaryProvider, todayEpochMillis, DAYS_IN_WEEK)
+        val weekStart = dayBoundaryProvider.startOfWeek(todayEpochMillis)
+        val days = DiaryDay.weekDays(dayBoundaryProvider, weekStart, DAYS_IN_WEEK)
+        val today = dayBoundaryProvider.startOfDay(todayEpochMillis)
         val entriesByDay = entries.groupBy { it.dayEpochMillis }
         val daySummaries =
             days.map { day ->
@@ -72,6 +78,7 @@ public object SummaryCalculator {
                     entryCount = dayEntries.size,
                     totals = NutritionTotals.fromEntries(dayEntries),
                     isEmpty = dayEntries.isEmpty(),
+                    isFuture = day > today,
                 )
             }
         val daysWithEntries = daySummaries.filterNot { it.isEmpty }

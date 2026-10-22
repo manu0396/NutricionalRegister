@@ -154,7 +154,7 @@ private fun WeekAverageCard(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = "No food was logged in the last seven days.",
+                        text = "No food has been logged this week yet.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -167,7 +167,7 @@ private fun WeekAverageCard(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = "daily average over the last seven days",
+                        text = "Daily average over the days you logged",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -243,7 +243,7 @@ private fun WeekDayRow(
             )
         }
         Text(
-            text = entryCountLabel(day.entryCount),
+            text = entryCountLabel(day),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 2,
@@ -266,10 +266,14 @@ private fun WeekDayRow(
 
 /**
  * The number of entries of a day, in words.
+ *
+ * A day that is still to come is announced as such, so the week reads as the
+ * week the user is living in and not as a row of days the app invented.
  */
-private fun entryCountLabel(entryCount: Int): String =
+private fun entryCountLabel(day: com.example.nutricionalregister.domain.summary.DaySummary): String =
     when {
-        entryCount <= 0 -> "Nothing logged"
-        entryCount == 1 -> "1 entry"
-        else -> "$entryCount entries"
+        day.isFuture -> "Still to come"
+        day.entryCount <= 0 -> "Nothing logged"
+        day.entryCount == 1 -> "1 entry"
+        else -> "${day.entryCount} entries"
     }

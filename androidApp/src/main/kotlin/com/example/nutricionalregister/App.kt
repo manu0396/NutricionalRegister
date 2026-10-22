@@ -20,7 +20,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import com.example.nutricionalregister.coach.CoachScreen
+import androidx.navigation.compose.rememberNavController
+import com.example.nutricionalregister.coach.CoachDialog
 import com.example.nutricionalregister.data.AndroidPurchaseClient
 import com.example.nutricionalregister.diary.AddFoodScreen
 import com.example.nutricionalregister.diary.TodayScreen
@@ -65,9 +66,14 @@ public fun App() {
     }
 
     var showPrivacyPolicy by remember { mutableStateOf(false) }
+    var showCoachDialog by remember { mutableStateOf(false) }
+
+    val navController = rememberNavController()
+    val navigator = remember(navController) { NutriLogNavigator(navController) }
 
     NutriLogTheme {
         AppShell(
+            navController = navController,
             todayContent = { padding, navigator -> TodayRoute(dependencies, padding, navigator) },
             libraryContent = { padding, navigator -> LibraryRoute(dependencies, padding, navigator) },
             moreContent = { padding, navigator ->
@@ -82,8 +88,29 @@ public fun App() {
                 AddFoodRoute(dependencies, destination, padding, navigator)
             },
             productContent = { padding, code, navigator -> ProductRoute(dependencies, code, padding, navigator) },
-            coachContent = { padding, navigator -> CoachRoute(dependencies, padding, navigator) },
             weeklyContent = { padding, navigator -> WeeklyRoute(dependencies, padding, navigator) },
+            onOpenCoach = { showCoachDialog = true },
+        )
+    }
+
+    if (showCoachDialog) {
+        val coachState by dependencies.coachViewModel.state.collectAsState()
+        val purchaseState by dependencies.premiumPurchaseViewModel.state.collectAsState()
+        val context = LocalContext.current
+        val isDebugBuild =
+            (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        CoachDialog(
+            state = coachState,
+            isUnlocked = purchaseState.isUnlocked || isDebugBuild,
+            onSend = { text -> dependencies.coachViewModel.send(text) },
+            onConfirmProposal = { dependencies.coachViewModel.confirmProposal() },
+            onDismissProposal = { dependencies.coachViewModel.dismissProposal() },
+            onGrantConsent = { dependencies.coachViewModel.grantConsent() },
+            onUpgrade = {
+                showCoachDialog = false
+                navigator.switchTo(NutriLogDestination.MORE)
+            },
+            onDismiss = { showCoachDialog = false },
         )
     }
 
@@ -124,7 +151,6 @@ private fun TodayRoute(
         onOpenProduct = { code -> navigator.openProduct(code) },
         onRemoveEntry = { id -> dependencies.diaryViewModel.removeEntry(id) },
         onOpenWeekly = navigator::openWeekly,
-        onOpenCoach = navigator::openCoach,
         contentPadding = contentPadding,
     )
 }
@@ -160,7 +186,6 @@ private fun MoreRoute(
     MoreScreen(
         goal = diaryState.goal,
         onGoalChanged = { goal -> dependencies.diaryViewModel.updateGoal(goal) },
-        onOpenCoach = navigator::openCoach,
         purchaseContent = {
             PremiumPurchaseSection(
                 state = purchaseState,
@@ -282,31 +307,6 @@ private fun ProductRoute(
             }
         },
         isSaved = code in libraryState.savedCodes,
-        contentPadding = contentPadding,
-    )
-}
-
-/** The conversational assistant. */
-@Composable
-private fun CoachRoute(
-    dependencies: AppDependencies,
-    contentPadding: PaddingValues,
-    navigator: NutriLogNavigator,
-) {
-    val state by dependencies.coachViewModel.state.collectAsState()
-    val purchaseState by dependencies.premiumPurchaseViewModel.state.collectAsState()
-    val context = LocalContext.current
-    val isDebugBuild =
-        (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
-    CoachScreen(
-        state = state,
-        isUnlocked = purchaseState.isUnlocked || isDebugBuild,
-        onSend = { text -> dependencies.coachViewModel.send(text) },
-        onConfirmProposal = { dependencies.coachViewModel.confirmProposal() },
-        onDismissProposal = { dependencies.coachViewModel.dismissProposal() },
-        onGrantConsent = { dependencies.coachViewModel.grantConsent() },
-        onUpgrade = { navigator.switchTo(NutriLogDestination.MORE) },
-        onBack = { navigator.back() },
         contentPadding = contentPadding,
     )
 }

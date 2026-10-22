@@ -131,6 +131,8 @@ private object StubDayBoundaryProvider : DayBoundaryProvider {
         dayStartEpochMillis: Long,
         days: Int,
     ): Long = dayStartEpochMillis
+
+    override fun startOfWeek(epochMillis: Long): Long = epochMillis
 }
 
 private object StubAssistantClient : AssistantClient {

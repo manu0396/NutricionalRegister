@@ -83,7 +83,6 @@ import com.example.nutricionalregister.ui.theme.NutriLogSpacing
  * @param onOpenProduct invoked with the product code of an entry that was opened.
  * @param onRemoveEntry invoked with the identifier of the entry to remove.
  * @param onOpenWeekly invoked when the week button is tapped.
- * @param onOpenCoach invoked when the coach card is tapped.
  * @param contentPadding the padding of the enclosing shell.
  * @param modifier the modifier applied to the screen.
  */
@@ -95,7 +94,6 @@ public fun TodayScreen(
     onOpenProduct: (String) -> Unit,
     onRemoveEntry: (Long) -> Unit,
     onOpenWeekly: () -> Unit,
-    onOpenCoach: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
@@ -116,7 +114,6 @@ public fun TodayScreen(
         ) {
             DaySummaryCard(state = state)
             MacroTiles(state = state)
-            CoachCard(onOpenCoach = onOpenCoach)
             MealsArea(
                 state = state,
                 onAddFood = onAddFood,
@@ -273,48 +270,6 @@ private fun MacroTiles(
             caption = "Fat, goal ${state.goal.fatGrams} g",
             modifier = Modifier.weight(1f),
         )
-    }
-}
-
-/**
- * The card that opens the assistant.
- *
- * The coach is a first-class part of the product, not a hidden extra, so it gets
- * a card of its own with a title and a sentence that says what it is for.
- */
-@Composable
-private fun CoachCard(
-    onOpenCoach: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    NutriLogSurfaceCard(modifier = modifier) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(NutriLogSpacing.medium),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(NutriLogSpacing.extraSmall),
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    text = "Coach",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = "Answers questions about the food you logged today and can log it for you.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            TextButton(
-                onClick = onOpenCoach,
-                modifier = Modifier.heightIn(min = MinimumTouchTarget),
-            ) {
-                Text("Ask")
-            }
-        }
     }
 }
 

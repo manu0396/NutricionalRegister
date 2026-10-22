@@ -46,6 +46,10 @@ import com.example.nutricionalregister.ui.theme.NutriLogSpacing
  * themselves are passed in as slots, so the shell decides where a screen lives
  * in the graph and the screen decides what it shows (ADR-0015, ADR-0019).
  *
+ * The Coach is not one of them: it opens over the screen the user is on, which
+ * is why [onOpenCoach] is an action and not a slot, and the shell offers it
+ * wherever the user is (ADR-0019).
+ *
  * The frame is derived from the **route hierarchy**, never from a lookup that
  * can fail for a nested route. The current destination is the first entry of
  * the hierarchy, read from the deepest side, that is one of the three
@@ -63,7 +67,6 @@ import com.example.nutricionalregister.ui.theme.NutriLogSpacing
  * @param moreContent goals, coach, premium and the rest.
  * @param addFoodContent the add-food flow, on the step the route names.
  * @param productContent the product detail, with the product's code.
- * @param coachContent the conversational assistant.
  * @param weeklyContent the seven-day summary.
  */
 @Composable
@@ -73,8 +76,8 @@ public fun AppShell(
     moreContent: @Composable (PaddingValues, NutriLogNavigator) -> Unit,
     addFoodContent: @Composable (PaddingValues, AddFoodDestination, NutriLogNavigator) -> Unit,
     productContent: @Composable (PaddingValues, String, NutriLogNavigator) -> Unit,
-    coachContent: @Composable (PaddingValues, NutriLogNavigator) -> Unit,
     weeklyContent: @Composable (PaddingValues, NutriLogNavigator) -> Unit,
+    onOpenCoach: () -> Unit,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
@@ -85,7 +88,6 @@ public fun AppShell(
     val showAddAction =
         currentDestination == NutriLogDestination.TODAY ||
             currentDestination == NutriLogDestination.LIBRARY
-    val currentIsCoach = backStackEntry?.destination?.route == NutriLogRoutes.COACH
 
     Scaffold(
         modifier = modifier,
@@ -99,37 +101,35 @@ public fun AppShell(
             }
         },
         floatingActionButton = {
-            if (!currentIsCoach) {
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(NutriLogSpacing.medium),
-                ) {
-                    if (showAddAction) {
-                        FloatingActionButton(
-                            onClick = { navigator.openAddFood() },
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                            shape = MaterialTheme.shapes.large,
-                            modifier = Modifier.testTag("nutrilog-add-food-fab"),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Add,
-                                contentDescription = "Add food",
-                            )
-                        }
-                    }
-                    SmallFloatingActionButton(
-                        onClick = { navigator.openCoach() },
-                        containerColor = MaterialTheme.colorScheme.secondary,
-                        contentColor = MaterialTheme.colorScheme.onSecondary,
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(NutriLogSpacing.medium),
+            ) {
+                if (showAddAction) {
+                    FloatingActionButton(
+                        onClick = { navigator.openAddFood() },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                         shape = MaterialTheme.shapes.large,
-                        modifier = Modifier.testTag("nutrilog-coach-fab"),
+                        modifier = Modifier.testTag("nutrilog-add-food-fab"),
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Face,
-                            contentDescription = "Ask the Coach",
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = "Add food",
                         )
                     }
+                }
+                SmallFloatingActionButton(
+                    onClick = onOpenCoach,
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier.testTag("nutrilog-coach-fab"),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Face,
+                        contentDescription = "Ask the Coach",
+                    )
                 }
             }
         },
@@ -182,9 +182,6 @@ public fun AppShell(
                     entry.argument(PRODUCT_CODE_ARGUMENT).orEmpty(),
                     navigator,
                 )
-            }
-            composable(NutriLogRoutes.COACH) {
-                coachContent(contentPadding, navigator)
             }
             composable(NutriLogRoutes.WEEKLY) {
                 weeklyContent(contentPadding, navigator)

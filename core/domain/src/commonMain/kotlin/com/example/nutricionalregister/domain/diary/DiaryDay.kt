@@ -28,4 +28,19 @@ public object DiaryDay {
         val today = provider.startOfDay(epochMillis)
         return (count - 1 downTo 0).map { offset -> provider.addDays(today, -offset) }
     }
+
+    /**
+     * The [count] days of the week that starts at [weekStartEpochMillis].
+     *
+     * The week is returned in order, the day the user is in last, so a view of
+     * the week reads left to right and shows what is still to come at the end.
+     */
+    public fun weekDays(
+        provider: DayBoundaryProvider,
+        weekStartEpochMillis: Long,
+        count: Int,
+    ): List<Long> {
+        require(count > 0) { "The number of days must be greater than zero" }
+        return (0 until count).map { offset -> provider.addDays(weekStartEpochMillis, offset) }
+    }
 }

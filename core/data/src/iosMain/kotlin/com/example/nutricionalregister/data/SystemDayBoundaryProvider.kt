@@ -34,7 +34,31 @@ internal class SystemDayBoundaryProvider : DayBoundaryProvider {
         return (shifted.timeIntervalSince1970 * MILLIS_PER_SECOND).toLong()
     }
 
+    override fun startOfWeek(epochMillis: Long): Long {
+        val date = NSDate.dateWithTimeIntervalSince1970(startOfDay(epochMillis) / MILLIS_PER_SECOND)
+        val components = NSDateComponents()
+        components.day = (-daysSinceMondayOf(date)).toLong()
+        val weekStart = calendar.dateByAddingComponents(components, toDate = date, options = 0u) ?: date
+        return startOfDay((weekStart.timeIntervalSince1970 * MILLIS_PER_SECOND).toLong())
+    }
+
+    /** The number of days between [date] and the Monday of its week. */
+    private fun daysSinceMondayOf(date: NSDate): Int {
+        // NSCalendarUnit is a plain unsigned mask in the Kotlin/Native
+        // Foundation binding, and no constant wrapper is generated for it, so
+        // the weekday is asked for with the legacy NSWeekdayCalendarUnit value.
+        val read = calendar.components(WEEKDAY_CALENDAR_UNIT_MASK, fromDate = date)
+        val weekday = read.weekday.toInt()
+        // Apple's weekday numbering starts the week with Sunday as 1, so
+        // Monday is 2, and the difference is folded to 0..6 regardless of the
+        // locale.
+        return (weekday - 2 + 7) % 7
+    }
+
     private companion object {
         private const val MILLIS_PER_SECOND = 1000.0
     }
 }
+
+/** The weekday mask of [NSCalendar.components], the legacy `NSWeekdayCalendarUnit` = 512. */
+private const val WEEKDAY_CALENDAR_UNIT_MASK: ULong = 512uL

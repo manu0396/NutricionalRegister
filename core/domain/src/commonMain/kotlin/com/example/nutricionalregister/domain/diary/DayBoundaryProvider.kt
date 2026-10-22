@@ -27,4 +27,14 @@ public interface DayBoundaryProvider {
         dayStartEpochMillis: Long,
         days: Int,
     ): Long
+
+    /**
+     * The local midnight that starts the week containing [epochMillis].
+     *
+     * The week is the platform's: the first day the user's device starts a week
+     * with, so the weekly view is the week the user thinks in and not a window
+     * the app invented. The domain uses it to know where the week begins;
+     * [addDays] gives it the seven days that follow.
+     */
+    public fun startOfWeek(epochMillis: Long): Long
 }

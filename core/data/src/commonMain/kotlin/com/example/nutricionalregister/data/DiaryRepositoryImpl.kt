@@ -33,9 +33,10 @@ public class DiaryRepositoryImpl(
             .map { rows -> rows.map { row -> row.toDiaryEntry() } }
 
     override fun observeEntriesForWeek(dayEpochMillis: Long): Flow<List<DiaryEntry>> {
-        val firstDay = dayBoundaryProvider.addDays(dayEpochMillis, -(WEEK_LENGTH_IN_DAYS - 1))
+        val firstDay = dayBoundaryProvider.startOfWeek(dayEpochMillis)
+        val lastDay = dayBoundaryProvider.addDays(firstDay, WEEK_LENGTH_IN_DAYS - 1)
         return database.diaryEntryQueries
-            .selectDiaryEntriesBetweenDays(firstDay, dayEpochMillis)
+            .selectDiaryEntriesBetweenDays(firstDay, lastDay)
             .asFlow()
             .mapToList(databaseDispatcher)
             .map { rows -> rows.map { row -> row.toDiaryEntry() } }

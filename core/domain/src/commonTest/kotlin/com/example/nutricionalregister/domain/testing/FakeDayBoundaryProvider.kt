@@ -24,6 +24,15 @@ public class FakeDayBoundaryProvider(
         dayStartEpochMillis: Long,
         days: Int,
     ): Long = dayStartEpochMillis + days * dayLengthMillis
+
+    override fun startOfWeek(epochMillis: Long): Long {
+        val day = startOfDay(epochMillis)
+        // 1970-01-01 was a Thursday, so a day's index inside its week is its
+        // position from the epoch plus three, folded to 0..6.
+        val daysFromEpoch = day / dayLengthMillis
+        val daysSinceMonday = (daysFromEpoch + 3L) % 7L
+        return day - daysSinceMonday * dayLengthMillis
+    }
 }
 
 /** The length of a day in milliseconds. */

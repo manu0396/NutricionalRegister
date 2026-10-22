@@ -33,7 +33,7 @@ class SummaryViewModelTest {
         }
 
     @Test
-    fun theSummaryCoversSevenDaysEndingWithToday() =
+    fun theSummaryCoversSevenDaysStartingWithTheWeekFirst() =
         runTest {
             val viewModel = viewModel(FakeDiaryRepository(), scope(testScheduler))
 
@@ -41,7 +41,9 @@ class SummaryViewModelTest {
 
             val summary = assertNotNull(viewModel.weeklySummary.value)
             assertEquals(7, summary.days.size)
-            assertEquals(0L, summary.days.last().dayEpochMillis)
+            // With the day at the epoch, a Sunday minus six days is the Monday
+            // 1970-01-01's own week began with.
+            assertTrue(summary.days.last { !it.isFuture }.dayEpochMillis == 0L)
             viewModel.clear()
         }
 
@@ -92,7 +94,11 @@ class SummaryViewModelTest {
             advanceUntilIdle()
 
             val summary = assertNotNull(viewModel.weeklySummary.value)
-            assertEquals(MILLIS_PER_DAY, summary.days.last().dayEpochMillis)
+            // The day after the epoch, which is a Friday, is inside Friday's
+            // own week, so the entry at day 0 is a past day of that week and
+            // the fresh days remain days to come.
+            assertTrue(summary.days.none { it.dayEpochMillis == MILLIS_PER_DAY && it.isFuture })
+            assertTrue(summary.days.last { !it.isFuture }.dayEpochMillis == MILLIS_PER_DAY)
             assertEquals(1, summary.daysWithEntries)
             viewModel.clear()
         }

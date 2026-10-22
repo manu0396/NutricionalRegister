@@ -174,6 +174,9 @@ class DiaryRepositoryImplTest {
         )
 
     private companion object {
-        private const val TODAY = 1_700_000_000_000L
+        // A Sunday means the week the calendar starts has its first day six days
+        // before today, so a past-day entry six days back is inside the window and
+        // one seven days back is outside it.
+        private const val TODAY = 1_704_585_600_000L
     }
 }

@@ -13,14 +13,23 @@ class WeeklySummaryTest {
     private val provider = FakeDayBoundaryProvider()
     private val today = provider.startOfDay(NOW)
     private val yesterday = today - MILLIS_PER_DAY
+    private val weekStart = provider.startOfWeek(NOW)
 
     @Test
-    fun `the summary always covers exactly seven days - oldest first and ending with today`() {
+    fun `the summary always covers exactly seven days - the first is the week's first`() {
         val summary = SummaryCalculator.weekly(provider, NOW, emptyList())
 
         assertEquals(SummaryCalculator.DAYS_IN_WEEK, summary.days.size)
-        assertEquals(today, summary.days.last().dayEpochMillis)
+        assertEquals(weekStart, summary.days.first().dayEpochMillis)
         assertEquals(summary.days.map { it.dayEpochMillis }.sorted(), summary.days.map { it.dayEpochMillis })
+    }
+
+    @Test
+    fun `the days of the week that are still to come are marked as such and today is not`() {
+        val summary = SummaryCalculator.weekly(provider, NOW, emptyList())
+
+        assertEquals(0, summary.futureDays.size)
+        assertTrue(summary.days.filter { it.dayEpochMillis <= today }.none { it.isFuture })
     }
 
     @Test
@@ -135,6 +144,6 @@ class WeeklySummaryTest {
         )
 
     private companion object {
-        private const val NOW = 1_700_000_000_000L
+        private const val NOW = 1_704_621_600_000L
     }
 }
