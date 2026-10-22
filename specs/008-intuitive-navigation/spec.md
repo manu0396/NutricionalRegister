@@ -17,14 +17,24 @@ was logged into - is one continuous, predictable flow.
 
 ### Session 2026-10-22
 
-- Q: After a food is logged, where does the user land? A: On the step where
-  the food is looked for (the flow's search), with the meal still chosen, so
-  another food for the same meal is one search away.
+- Q: After a food is logged, where does the user land? A: On the flow's search
+  step, with the meal still chosen, so another food for the same meal is one
+  search away. Confirmed.
 - Q: What does the back control mean inside the flow? A: The previous step of
   the flow, keeping what was chosen; from the flow's first step, the screen
-  the flow came from.
-- Q: What does the product detail's back control mean when it was opened from
-  the flow? A: The flow's step it came from, never the diary.
+  the flow came from. Confirmed.
+- Q: When the quantity step goes back, or a detail row's back control is
+  pressed, where does the app return? A: The flow's search step, with the
+  query and the results kept; a detour never appears, whatever pushed on the
+  flow. Confirmed.
+- Q: When the flow was opened from a Library row (a food already chosen) and
+  the user confirms, where does the app land? A: The flow's search step as
+  well, so the work of adding food is one continuous flow from any opening.
+  Confirmed.
+- Q: What does a result's tap inside the flow's search do? A: It opens the
+  food's detail, so the nutrition is read before the amount is chosen; the
+  detail's "Add to diary" carries the food into the flow's quantity step.
+  Confirmed.
 
 ## User Scenarios & Testing *(mandatory)*
 
