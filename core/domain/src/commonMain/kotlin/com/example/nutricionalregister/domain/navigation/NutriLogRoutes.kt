@@ -118,6 +118,18 @@ public object NutriLogRoutes {
     ): String = addFoodStep(ADD_FOOD_SOURCE, meal, productCode)
 
     /**
+     * The route the flow's confirm control lands on.
+     *
+     * Logging a food does not return the user to a screen they already left:
+     * it lands on the step where the food is looked for, with the meal the
+     * food was logged into kept, because the same meal's next food is one
+     * search away (ADR-0021). The landing is the domain's own rule, so a shell
+     * that carries the navigation out asks for it and never works it out from
+     * the stack's shape.
+     */
+    public fun addFoodLanding(meal: String? = null): String = addFoodSource(meal)
+
+    /**
      * The route of [step] with the two optional arguments.
      *
      * Both arguments are always written, even when they are empty, because the

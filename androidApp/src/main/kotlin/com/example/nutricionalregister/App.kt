@@ -245,8 +245,11 @@ private fun AddFoodRoute(
         onMealSheetDismissed = { dependencies.addFoodViewModel.closeMealSheet() },
         onMealSelected = { meal -> dependencies.addFoodViewModel.selectMeal(meal) },
         onConfirm = {
+            val mealName =
+                dependencies.addFoodViewModel.state.value.mealType
+                    ?.name
             dependencies.addFoodViewModel.confirm()
-            navigator.back()
+            navigator.landAfterAddFood(mealName)
         },
         onBack = { navigator.back() },
         contentPadding = contentPadding,
@@ -280,6 +283,30 @@ private fun onBarcodeResolved(
     }
 }
 
+/**
+ * Carries [product] into the flow (ADR-0021).
+ *
+ * A detail opened from a flow row returns the user to the flow that is already
+ * open, at its quantity step, so the walk back is one step and the session does
+ * not reset. A detail opened outside a flow (from the diary's entries or from
+ * the Library) opens the flow from the beginning, with the food preselected.
+ */
+private fun addProductToFlow(
+    dependencies: AppDependencies,
+    navigator: NutriLogNavigator,
+    product: com.example.nutricionalregister.domain.product.Product,
+) {
+    val mealName =
+        dependencies.addFoodViewModel.state.value.mealType
+            ?.name
+    if (navigator.isFlowOpen()) {
+        dependencies.addFoodViewModel.selectProduct(product)
+        navigator.carryProductIntoFlow(mealName)
+    } else {
+        navigator.openAddFood(productCode = product.code)
+    }
+}
+
 /** The detail of one catalogue product. */
 @Composable
 private fun ProductRoute(
@@ -298,7 +325,7 @@ private fun ProductRoute(
     ProductDetailScreen(
         state = state,
         onBack = { navigator.back() },
-        onAddToDiary = { product -> navigator.openAddFood(productCode = product.code) },
+        onAddToDiary = { product -> addProductToFlow(dependencies, navigator, product) },
         onToggleSaved = { product ->
             if (product.code in libraryState.savedCodes) {
                 dependencies.libraryViewModel.remove(product.code)

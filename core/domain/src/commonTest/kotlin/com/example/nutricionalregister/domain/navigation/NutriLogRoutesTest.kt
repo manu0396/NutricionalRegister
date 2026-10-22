@@ -3,6 +3,7 @@ package com.example.nutricionalregister.domain.navigation
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class NutriLogRoutesTest {
     @Test
@@ -47,6 +48,25 @@ class NutriLogRoutesTest {
     @Test
     fun `a blank add food argument is treated as absent`() {
         assertEquals("addfood/source?meal=&product=", NutriLogRoutes.addFood(meal = "  ", productCode = ""))
+    }
+
+    @Test
+    fun `the confirm's landing is the flow's own source step with the meal kept`() {
+        assertEquals("addfood/source?meal=LUNCH&product=", NutriLogRoutes.addFoodLanding("LUNCH"))
+        assertEquals("addfood/source?meal=&product=", NutriLogRoutes.addFoodLanding())
+        assertEquals(
+            "addfood/source?meal=&product=",
+            NutriLogRoutes.addFoodLanding("   "),
+            "a blank meal is not a meal the flow opened with",
+        )
+    }
+
+    @Test
+    fun `the confirm's landing is never a detail or a quantity step`() {
+        val landing = NutriLogRoutes.addFoodLanding("LUNCH")
+        assertTrue(landing.startsWith(NutriLogRoutes.ADD_FOOD_SOURCE), landing)
+        assertTrue(!landing.startsWith(NutriLogRoutes.ADD_FOOD_QUANTITY.replace("\\?", "")), landing)
+        assertEquals("addfood/source", landing.substringBefore('?'))
     }
 
     @Test

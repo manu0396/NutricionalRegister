@@ -41,6 +41,43 @@ public class NutriLogNavigator internal constructor(
         navController.navigate(NutriLogRoutes.addFoodQuantity())
     }
 
+    /** Whether an opening of the add-food flow is on the stack right now. */
+    public fun isFlowOpen(): Boolean = runCatching { navController.getBackStackEntry(NutriLogRoutes.ADD_FOOD_GRAPH) }.isSuccess
+
+    /**
+     * Carries the product the user chose on a detail into the flow that is
+     * already open, without opening a second flow (ADR-0021).
+     */
+    public fun carryProductIntoFlow(mealName: String?) {
+        navController.navigate(
+            NutriLogRoutes.addFoodQuantity(mealName),
+        ) {
+            // The detail the flow's row opened is consumed by this carrying:
+            // the quantity step sits directly on the flow's source step, so
+            // the walk back is one step and not a detour.
+            popUpTo(NutriLogRoutes.ADD_FOOD_SOURCE) { inclusive = false }
+            launchSingleTop = true
+        }
+    }
+
+    /**
+     * Lands the flow after a food was logged into [mealName].
+     *
+     * The landing is the flow's own source step, with the meal the food was
+     * logged into carried on it, so the same meal's next food is one search
+     * away (ADR-0021). The flow's state above it is kept by the view model,
+     * so nothing is lost on the way back: the quantity step and the detail a
+     * flow row opened are the entries that were consumed by this landing.
+     */
+    public fun landAfterAddFood(mealName: String?) {
+        navController.navigate(
+            NutriLogRoutes.addFoodLanding(mealName),
+        ) {
+            popUpTo(NutriLogRoutes.ADD_FOOD_GRAPH) { inclusive = false }
+            launchSingleTop = true
+        }
+    }
+
     /** Opens the weekly summary. */
     public fun openWeekly() {
         navController.navigate(NutriLogRoutes.WEEKLY)
