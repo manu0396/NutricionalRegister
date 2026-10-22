@@ -22,18 +22,55 @@ class NutriLogRoutesTest {
     }
 
     @Test
-    fun `the add food route without arguments opens the graph with empty arguments`() {
-        assertEquals("addfood?meal=&product=", NutriLogRoutes.addFood())
+    fun `the add food route without arguments opens the source step`() {
+        assertEquals("addfood/source?meal=&product=", NutriLogRoutes.addFood())
     }
 
     @Test
-    fun `the add food route carries the meal and the product`() {
-        assertEquals("addfood?meal=LUNCH&product=123", NutriLogRoutes.addFood(meal = "LUNCH", productCode = "123"))
+    fun `the add food route carries the meal`() {
+        assertEquals("addfood/source?meal=LUNCH&product=", NutriLogRoutes.addFood(meal = "LUNCH"))
+    }
+
+    @Test
+    fun `the add food route with a food opens the quantity step`() {
+        assertEquals("addfood/quantity?meal=&product=123", NutriLogRoutes.addFood(productCode = "123"))
+    }
+
+    @Test
+    fun `the add food route carries the meal and the food`() {
+        assertEquals(
+            "addfood/quantity?meal=LUNCH&product=123",
+            NutriLogRoutes.addFood(meal = "LUNCH", productCode = "123"),
+        )
     }
 
     @Test
     fun `a blank add food argument is treated as absent`() {
-        assertEquals("addfood?meal=&product=", NutriLogRoutes.addFood(meal = "  ", productCode = ""))
+        assertEquals("addfood/source?meal=&product=", NutriLogRoutes.addFood(meal = "  ", productCode = ""))
+    }
+
+    @Test
+    fun `the quantity step route always names the two arguments`() {
+        assertEquals("addfood/quantity?meal=&product=", NutriLogRoutes.addFoodQuantity())
+        assertEquals("addfood/quantity?meal=LUNCH&product=123", NutriLogRoutes.addFoodQuantity("LUNCH", "123"))
+    }
+
+    @Test
+    fun `the source step route always names the two arguments`() {
+        assertEquals("addfood/source?meal=&product=", NutriLogRoutes.addFoodSource())
+        assertEquals("addfood/source?meal=LUNCH&product=", NutriLogRoutes.addFoodSource("LUNCH"))
+    }
+
+    @Test
+    fun `the declared step routes carry the optional arguments`() {
+        assertEquals(
+            "addfood/source?meal={meal}&product={product}",
+            NutriLogRoutes.ADD_FOOD_SOURCE_ROUTE,
+        )
+        assertEquals(
+            "addfood/quantity?meal={meal}&product={product}",
+            NutriLogRoutes.ADD_FOOD_QUANTITY_ROUTE,
+        )
     }
 
     @Test
