@@ -1,6 +1,10 @@
 package com.example.nutricionalregister.data.testing
 
 import com.example.nutricionalregister.data.ProductSearchRuntime
+import com.example.nutricionalregister.domain.assistant.AssistantClient
+import com.example.nutricionalregister.domain.assistant.AssistantContext
+import com.example.nutricionalregister.domain.assistant.AssistantMessage
+import com.example.nutricionalregister.domain.assistant.AssistantReply
 import com.example.nutricionalregister.domain.diary.DayBoundaryProvider
 import com.example.nutricionalregister.domain.diary.DiaryEntry
 import com.example.nutricionalregister.domain.diary.DiaryRepository
@@ -39,6 +43,8 @@ class ProductSearchRuntimeTest {
                 diaryRepository = StubDiaryRepository,
                 nutritionGoalRepository = StubNutritionGoalRepository,
                 dayBoundaryProvider = StubDayBoundaryProvider,
+                assistantClient = StubAssistantClient,
+                isAssistantConfigured = true,
                 closeResources = { closeCalls += 1 },
             )
 
@@ -50,6 +56,8 @@ class ProductSearchRuntimeTest {
         assertSame(StubDiaryRepository, runtime.diaryRepository)
         assertSame(StubNutritionGoalRepository, runtime.nutritionGoalRepository)
         assertSame(StubDayBoundaryProvider, runtime.dayBoundaryProvider)
+        assertSame(StubAssistantClient, runtime.assistantClient)
+        assertEquals(true, runtime.isAssistantConfigured)
         assertEquals(0, closeCalls)
 
         // WHEN the runtime is closed twice
@@ -123,4 +131,11 @@ private object StubDayBoundaryProvider : DayBoundaryProvider {
         dayStartEpochMillis: Long,
         days: Int,
     ): Long = dayStartEpochMillis
+}
+
+private object StubAssistantClient : AssistantClient {
+    override suspend fun complete(
+        messages: List<AssistantMessage>,
+        context: AssistantContext,
+    ): AssistantReply = error("The stub assistant never answers")
 }
