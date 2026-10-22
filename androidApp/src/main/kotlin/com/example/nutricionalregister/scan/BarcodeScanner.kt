@@ -1,5 +1,7 @@
 package com.example.nutricionalregister.scan
 
+import androidx.annotation.OptIn
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
@@ -64,6 +66,7 @@ public class MlKitBarcodeDecoder : BarcodeDecoder {
  * until it reports. Closing it earlier would hand the decoder a recycled
  * buffer.
  */
+@OptIn(ExperimentalGetImage::class)
 public class BarcodeImageAnalyzer(
     private val decoder: BarcodeDecoder,
     private val onBarcode: (String) -> Unit,
