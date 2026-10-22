@@ -2,6 +2,7 @@ package com.example.nutricionalregister.data.assistant
 
 import com.example.nutricionalregister.domain.assistant.AssistantAction
 import com.example.nutricionalregister.domain.assistant.AssistantContext
+import com.example.nutricionalregister.domain.assistant.AssistantLibraryFood
 import com.example.nutricionalregister.domain.assistant.AssistantMessage
 import com.example.nutricionalregister.domain.diary.DiaryEntry
 import com.example.nutricionalregister.domain.diary.MealType
@@ -37,17 +38,42 @@ internal data class GatewayMessage(
 )
 
 /**
+ * One food of the user's library, as the gateway sees it.
+ *
+ * A plan for the day needs to know what a food contains, so the food is
+ * carried with the nutrition the catalogue reports for it per 100 g; a value
+ * the catalogue does not report is omitted, so the assistant can speak only of
+ * the amounts it can see (FR-028).
+ *
+ * @property code the catalogue identity of the food.
+ * @property name the food's display name, so a plan can say what it proposes.
+ * @property energyKcal the calories per 100 g, when reported.
+ * @property proteinGrams the protein per 100 g, when reported.
+ * @property carbohydrateGrams the carbohydrate per 100 g, when reported.
+ * @property fatGrams the fat per 100 g, when reported.
+ */
+@Serializable
+internal data class GatewayLibraryFood(
+    val code: String,
+    val name: String,
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val energyKcal: Double? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val proteinGrams: Double? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val carbohydrateGrams: Double? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val fatGrams: Double? = null,
+)
+
+/**
  * The minimal diary context the gateway is allowed to see.
  *
  * @property entries the entries of the day.
  * @property goal the daily targets.
- * @property libraryCodes the codes of the foods the user keeps.
+ * @property library the foods the user keeps, with what each one contains.
  */
 @Serializable
 internal data class GatewayContext(
     val entries: List<GatewayEntry>,
     val goal: GatewayGoal,
-    val libraryCodes: List<String>,
+    val library: List<GatewayLibraryFood> = emptyList(),
 )
 
 /**
@@ -162,7 +188,20 @@ internal fun AssistantContext.toGatewayContext(): GatewayContext =
                 carbohydrateGrams = goal.carbohydrateGrams,
                 fatGrams = goal.fatGrams,
             ),
-        libraryCodes = libraryCodes,
+        library = library.map { food -> food.toGatewayFood() },
+    )
+
+/**
+ * One food of the library, with only what the app is allowed to send.
+ */
+private fun AssistantLibraryFood.toGatewayFood(): GatewayLibraryFood =
+    GatewayLibraryFood(
+        code = code,
+        name = name,
+        energyKcal = energyKcal,
+        proteinGrams = proteinGrams,
+        carbohydrateGrams = carbohydrateGrams,
+        fatGrams = fatGrams,
     )
 
 /**

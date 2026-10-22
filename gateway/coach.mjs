@@ -57,15 +57,26 @@ export function conversationFor(context) {
 
 /** The diary context, written for the model so it can answer about the day. */
 export function contextFor(context) {
+  const library =
+    Array.isArray(context.library) && context.library.length > 0
+      ? context.library
+      : (context.libraryCodes ?? []).map((code) => ({code, name: code}));
+  const remaining = remainingKcal(context);
   return JSON.stringify(
     {
       entries: context.entries,
       goal: context.goal,
       totals: summaryOf(context.entries),
-      remaining: {
-        energyKcal: remainingKcal(context),
-      },
-      libraryCodes: context.libraryCodes,
+      remaining,
+      // The meals of the day that already have entries, so completing the day
+      // names only the meals that can still be filled.
+      mealsLogged: mealsLogged(context.entries),
+      library,
+      // How many grams of each library food reach a share of what remains, so
+      // a plan is a choice of a food and a portion and not a sum the model has
+      // to do.
+      portions: portionsOf(library, remaining.energyKcal),
+      libraryCodes: library.map((food) => food.code),
     },
     null,
     2,
@@ -75,9 +86,9 @@ export function contextFor(context) {
 /**
  * The day's numbers, computed by the gateway and never by the model.
  *
- * A small model that does arithmetic is a model that is wrong, so the gateway
- * sums what the app reported and says what is unknown in words; the model's
- * job is the phrasing and the advice, never the sums.
+ * A model that does arithmetic is a model that is wrong, so the gateway sums
+ * what the app reported and says what is unknown in words; the model's job is
+ * the phrasing and the choice, never the sums.
  */
 export function summaryOf(entries) {
   const nutrient = (key) => {
@@ -95,12 +106,45 @@ export function summaryOf(entries) {
   };
 }
 
+/** The meals of the day that have entries, as the app names them. */
+function mealsLogged(entries) {
+  return [...new Set((entries ?? []).map((entry) => String(entry.meal ?? "").toUpperCase()))];
+}
+
 /** The calories the day still has room for, or null when the day is unknown. */
 function remainingKcal(context) {
   const totals = summaryOf(context.entries).energyKcal;
-  if (!totals) return null;
+  if (totals === null) return {energyKcal: null, note: "today's calories are unknown"};
   const consumed = totals.atLeast ?? totals.value;
-  return Math.max(0, Math.round(context.goal.energyKcal - consumed));
+  return {
+    energyKcal: Math.max(0, Math.round(context.goal.energyKcal - consumed)),
+    note: `${Math.round(consumed)} of ${context.goal.energyKcal} kcal logged`,
+  };
+}
+
+/**
+ * The portions of each library food that cover a share of what remains.
+ *
+ * For each food with calories the gateway computes the grams that would reach
+ * a quarter, a half and the whole of what is left, which are the sizes a plan
+ * picks from, so the model never has to multiply.
+ */
+function portionsOf(library, remaining) {
+  if (!(remaining > 0)) return {};
+  const portions = {};
+  for (const food of library ?? []) {
+    const per100 = typeof food?.energyKcal === "number" ? food.energyKcal : null;
+    if (!per100 || per100 <= 0) continue;
+    const grams = (share) => Math.round(((remaining * share) / per100) * 100) / 10;
+    portions[food.code] = {
+      name: food.name,
+      kcalPer100g: per100,
+      quarterOfWhatRemains: grams(0.25),
+      halfOfWhatRemains: grams(0.5),
+      wholeOfWhatRemains: grams(1),
+    };
+  }
+  return portions;
 }
 
 

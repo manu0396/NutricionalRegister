@@ -577,3 +577,31 @@ do not infer successful verification from generated files alone.
 - **Failures/corrections during the work**: the local engine's model name is
   the engine's, so the harness was corrected to name the model it serves;
   the deterministic fallback stays the answer of last resort.
+
+
+### The coach plans a day from the user's library (spec 007, follow-up)
+
+- **Scope**: the review asked for a coach that can complete all the meals to
+  reach the day's calories goal just by being asked. That needs what a food
+  contains, which the context did not carry: a plan could only name codes.
+- **What changed**: the shared `AssistantContext` now carries the library as
+  foods with their nutrition per 100 g (`AssistantLibraryFood`), so the AI
+  service can reason about what a food would contribute. The executor owns
+  `libraryFoods()`, which reads the saved record and the catalogue's copy and
+  turns a food into its per-100 g amounts, whether the catalogue declared them
+  per 100 g or per serving. The wire's context carries the library and its
+  nutrients, with a value the catalogue does not report omitted. The gateway
+  gained a planner: the plan of the rest of the day is computed there, in
+  grams, one portion per meal that has no entries, split evenly over what
+  remains and topped up where a portion's largest sensible size binds, so the
+  day provably ends at the goal (verified: 2000 -> 2006 kcal) when the
+  library's foods can carry it, and the answer says plainly what is still
+  missing when it cannot. The model writes the words for the plan the gateway
+  computed; a plan is never re-derived by the model. When the model answers
+  only in actions, the gateway keeps the words for its own plan.
+- **Commands run**: the full host gates (tests, coverage gate, ktlint,
+  architecture, plain text); the three-question proof through `curl` over
+  HTTPS; the instrumented suite (15 tests on the emulator).
+- **Results**: all gates green; the plan's log actions were proposed for
+  LUNCH, DINNER and SNACKS from the library and the day would end at about
+  2006 kcal of the 2000 goal.

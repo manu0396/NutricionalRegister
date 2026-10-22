@@ -1,6 +1,7 @@
 package com.example.nutricionalregister.data.assistant
 
 import com.example.nutricionalregister.domain.assistant.AssistantContext
+import com.example.nutricionalregister.domain.assistant.AssistantLibraryFood
 import com.example.nutricionalregister.domain.assistant.AssistantMessage
 import com.example.nutricionalregister.domain.assistant.AssistantRole
 import com.example.nutricionalregister.domain.diary.NutritionGoal
@@ -31,5 +32,5 @@ private val context: AssistantContext =
     AssistantContext(
         entries = emptyList(),
         goal = NutritionGoal(),
-        libraryCodes = listOf("00042"),
+        library = listOf(AssistantLibraryFood(code = "00042", name = "Oat drink")),
     )

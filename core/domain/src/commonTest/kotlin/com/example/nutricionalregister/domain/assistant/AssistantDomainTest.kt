@@ -1,5 +1,6 @@
 package com.example.nutricionalregister.domain.assistant
 
+import com.example.nutricionalregister.domain.assistant.AssistantLibraryFood
 import com.example.nutricionalregister.domain.diary.MealType
 import com.example.nutricionalregister.domain.diary.NutritionGoal
 import kotlinx.coroutines.test.runTest
@@ -46,11 +47,11 @@ class AssistantDomainTest {
             AssistantContext(
                 entries = emptyList(),
                 goal = NutritionGoal(energyKcal = 2400),
-                libraryCodes = listOf("0001"),
+                library = listOf(AssistantLibraryFood(code = "0001", name = "Oats")),
             )
 
         assertEquals(2400, context.goal.energyKcal)
-        assertEquals(listOf("0001"), context.libraryCodes)
+        assertEquals("0001", context.library.first().code)
         assertEquals(0, context.entries.size)
     }
 
@@ -100,6 +101,6 @@ class AssistantDomainTest {
         AssistantContext(
             entries = emptyList(),
             goal = NutritionGoal(),
-            libraryCodes = emptyList(),
+            library = emptyList(),
         )
 }

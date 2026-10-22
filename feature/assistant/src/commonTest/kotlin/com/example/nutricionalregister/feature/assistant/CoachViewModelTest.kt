@@ -294,7 +294,7 @@ class CoachViewModelTest {
             val context = client.requests.single().context
             assertEquals(1, context.entries.size)
             assertEquals(2400, context.goal.energyKcal)
-            assertEquals(listOf("0001"), context.libraryCodes)
+            assertEquals("0001", context.library.first().code)
         }
 
     private fun scope(scheduler: TestCoroutineScheduler): CoroutineScope = CoroutineScope(StandardTestDispatcher(scheduler))

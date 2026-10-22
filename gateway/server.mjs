@@ -24,11 +24,13 @@ import {rateLimitedClient} from "./rate-limit.mjs";
 import {generate, isConfigured, model, providerKind} from "./provider.mjs";
 import {fallbackAnswer} from "./fallback.mjs";
 import {actionsFrom, contextFor, conversationFor, systemPrompt} from "./coach.mjs";
+import {plan, planPrompt, planReplyText} from "./planner.mjs";
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 const BODY_LIMIT_BYTES = 64 * 1024;
 const CHAT_PATH = "/v1/chat";
 const HEALTH_PATH = "/v1/health";
+const MARKER = "### ACTIONS";
 
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_CHARS = 4_000;
@@ -117,11 +119,22 @@ function lintEnvelope(envelope) {
       .map(validEntry)
       .filter(Boolean),
     goal: validGoal(context.goal),
-    libraryCodes: (Array.isArray(context.libraryCodes) ? context.libraryCodes : [])
-      .filter((code) => typeof code === "string" && code.trim())
-      .slice(0, MAX_LIBRARY_CODES)
-      .map((code) => code.trim().slice(0, 64)),
+    library: (Array.isArray(context.library) ? context.library : []).slice(0, MAX_LIBRARY_CODES).map(validLibraryFood).filter(Boolean),
   };
+}
+
+/** One food of the library, as the gateway keeps it: what it is and what it contains. */
+function validLibraryFood(food) {
+  if (!isPlainObject(food)) return null;
+  const code = typeof food.code === "string" ? food.code.trim() : "";
+  const name = typeof food.name === "string" ? food.name.trim() : "";
+  if (!code) return null;
+  const clean = {code: code.slice(0, 64), name: (name || code).slice(0, 120)};
+  for (const nutrient of ["energyKcal", "proteinGrams", "carbohydrateGrams", "fatGrams"]) {
+    const value = food[nutrient];
+    if (typeof value === "number" && Number.isFinite(value)) clean[nutrient] = value;
+  }
+  return clean;
 }
 
 function respond(response, status, body) {
@@ -168,29 +181,53 @@ async function route(request, response) {
     return;
   }
 
+  // When the user asks for the day to be completed, the plan is computed by
+  // the gateway and the model writes the words for it, so the answer reaches
+  // the goal by construction and not by a model's arithmetic (ADR-0020).
+  const computedPlan = plan(context);
+
   try {
     let body;
     try {
-      const completion = await generate({
-        model: model(),
-        maxTokens: 1200,
-        system: `${systemPrompt(MEALS)}\n\nDATA:\n${contextFor(context)}`,
-        messages: conversationFor(context),
-      });
-      const reply = String(completion?.text ?? "").trim();
+      const upstream =
+        computedPlan
+          ? // The plan the gateway computed is written about, not re-derived:
+            // the model speaks of the foods, the grams and the meals the plan
+            // actually contains.
+            [
+              ...conversationFor(context),
+              {role: "user", content: planPrompt(computedPlan)},
+            ]
+          : conversationFor(context);
+      const completion =
+        await generate({
+          model: model(),
+          maxTokens: 1200,
+          system: `${systemPrompt(MEALS)}\n\nDATA:\n${contextFor(context)}`,
+          messages: upstream,
+        });
+      let reply = String(completion?.text ?? "").trim();
+      if (computedPlan && reply.startsWith(MARKER)) reply = "";
+      if (!reply && computedPlan) {
+        // A plan is the gateway's, so words about it are the gateway's when
+        // the model has none: the proposed portions read as the plan itself.
+        reply = planReplyText(computedPlan);
+      }
       if (!reply) throw new Error("no-content");
-      body = {reply, actions: actionsFrom(reply, context.entries)};
-      log(`200 request ${requestId} turns ${context.conversation.length} entries ${context.entries.length} model ${model()}`);
+      // A computed plan is the proposal the gateway sends; the model's own
+      // suggestions are only used when there was nothing to compute.
+      body = {reply, actions: computedPlan ? computedPlan.actions : actionsFrom(reply, context.entries)};
+      log(
+        `200 request ${requestId} turns ${context.conversation.length} entries ${context.entries.length}` +
+          ` plan ${computedPlan ? computedPlan.actions.length : 0} model ${model()}`,
+      );
     } catch (failure) {
       // The provider is the production answer, not the only one: when it is
       // not configured or it fails, the gateway answers with the day computed
       // from the same minimal context, so the Coach never shows a dead end
       // (ADR-0020). An upstream outage is never reported as a client's error.
       body = fallbackAnswer(context);
-      log(
-        `200 request ${requestId} fallback (${failure.name ?? "error"}) entries ${context.entries.length}` +
-          ` library ${context.libraryCodes.length}`,
-      );
+      log(`200 request ${requestId} fallback (${failure.name ?? "error"}) entries ${context.entries.length}`);
     }
     client.spend();
     respond(response, 200, body);
@@ -212,7 +249,7 @@ const options = createServerOptions();
 const factory = options.cert ? https.createServer.bind(null, options) : http.createServer.bind(null);
 const server = factory((request, response) => {
   route(request, response).catch((failure) => {
-    log("Unhandled route failure: internal server error");
+    log(`Unhandled route failure: ${failure.message ?? "unknown"} ${failure.stack?.split("\n")[1] ?? ""}`);
     respond(response, 500, {error: "Internal error"});
   });
 });

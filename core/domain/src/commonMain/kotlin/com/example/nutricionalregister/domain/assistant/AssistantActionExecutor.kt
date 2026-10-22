@@ -136,6 +136,35 @@ public class AssistantActionExecutor(
     }
 
     /**
+     * The foods the user keeps, with the nutrition the catalogue reports for
+     * each one.
+     *
+     * The context the assistant talks from is built here, because the executor
+     * owns the rule of which food a proposal may name: a food of the user's
+     * library, read from the catalogue when it can be. A food the catalogue
+     * does not know is carried with no nutrition at all, and the assistant can
+     * then speak of the food, but not of what is in it.
+     */
+    public suspend fun libraryFoods(): List<AssistantLibraryFood> =
+        savedProductRepository
+            .observeSaved()
+            .first()
+            .map { saved ->
+                // The nutrition per 100 g, which is what a plan is computed
+                // from, whether the catalogue declared it per 100 g or per
+                // serving.
+                val per100 = productFor(saved.code)?.let { NutritionCalculator.contribution(it, 100.0) }
+                AssistantLibraryFood(
+                    code = saved.code,
+                    name = saved.name,
+                    energyKcal = per100?.energyKcal,
+                    proteinGrams = per100?.proteinGrams,
+                    carbohydrateGrams = per100?.carbohydrateGrams,
+                    fatGrams = per100?.fatGrams,
+                )
+            }
+
+    /**
      * The food a proposal may name, or null when the app does not know it.
      *
      * The catalogue copy is read first, because it carries the nutrition; a

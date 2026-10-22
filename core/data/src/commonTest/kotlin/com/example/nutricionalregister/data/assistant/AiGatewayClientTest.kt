@@ -2,6 +2,7 @@ package com.example.nutricionalregister.data.assistant
 
 import com.example.nutricionalregister.domain.assistant.AssistantAction
 import com.example.nutricionalregister.domain.assistant.AssistantContext
+import com.example.nutricionalregister.domain.assistant.AssistantLibraryFood
 import com.example.nutricionalregister.domain.assistant.AssistantMessage
 import com.example.nutricionalregister.domain.assistant.AssistantRole
 import com.example.nutricionalregister.domain.diary.DiaryEntry
@@ -385,10 +386,19 @@ class AiGatewayClientTest {
             val payload = Json.parseToJsonElement(body).jsonObject
             assertEquals(setOf("messages", "context"), payload.keys)
             val sent = payload.getValue("context").jsonObject
-            assertEquals(setOf("entries", "goal", "libraryCodes"), sent.keys)
-            val codes = sent.getValue("libraryCodes").jsonArray
-            val codeValues = codes.map { code -> code.jsonPrimitive.content }
-            assertEquals(listOf("00042", "0012345678905"), codeValues)
+            assertEquals(setOf("entries", "goal", "library"), sent.keys)
+            val codes =
+                sent
+                    .getValue("library")
+                    .jsonArray
+                    .map { food ->
+                        food
+                            .jsonObject
+                            .getValue("code")
+                            .jsonPrimitive
+                            .content
+                    }
+            assertEquals(listOf("00042", "0012345678905"), codes)
             val entries = sent.getValue("entries").jsonArray
             val entry = entries.single().jsonObject
             assertEquals(
@@ -452,7 +462,7 @@ class AiGatewayClientTest {
 
             client.complete(
                 messages = listOf(AssistantMessage(AssistantRole.USER, "What did I eat?")),
-                context = AssistantContext(entries = listOf(withoutNutrients), goal = goal, libraryCodes = emptyList()),
+                context = AssistantContext(entries = listOf(withoutNutrients), goal = goal, library = emptyList()),
             )
 
             val body = requireNotNull(captured).body.toByteArray().decodeToString()
@@ -506,7 +516,11 @@ private val context: AssistantContext =
     AssistantContext(
         entries = listOf(entry),
         goal = goal,
-        libraryCodes = listOf("00042", "0012345678905"),
+        library =
+            listOf(
+                AssistantLibraryFood(code = "00042", name = "Oat drink", energyKcal = 100.0),
+                AssistantLibraryFood(code = "0012345678905", name = "Rolled oats"),
+            ),
     )
 
 private const val EXPECTED_REQUEST_BODY: String =
@@ -515,4 +529,5 @@ private const val EXPECTED_REQUEST_BODY: String =
         """"meal":"BREAKFAST","quantityGrams":250.0,"energyKcal":105.0,"proteinGrams":2.0,""" +
         """"carbohydrateGrams":18.0,"fatGrams":1.5}],""" +
         """"goal":{"energyKcal":2000,"proteinGrams":120,"carbohydrateGrams":220,"fatGrams":70},""" +
-        """"libraryCodes":["00042","0012345678905"]}}"""
+        """"library":[{"code":"00042","name":"Oat drink","energyKcal":100.0},""" +
+        """{"code":"0012345678905","name":"Rolled oats"}]}}"""

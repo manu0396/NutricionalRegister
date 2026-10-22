@@ -187,17 +187,17 @@ public class CoachViewModel(
      * library are collected; the catalogue, the recent searches and the
      * purchase records never leave the device (FR-028).
      */
-    private suspend fun buildContext(): AssistantContext {
-        val dayStart = dayBoundaryProvider.startOfDay(clock.nowEpochMillis())
-        val entries = diaryRepository.observeEntriesForDay(dayStart).first()
-        val goal = goalRepository.observeGoal().first()
-        val libraryCodes = savedProductRepository.observeSaved().first().map { saved -> saved.code }
-        return AssistantContext(
-            entries = entries,
-            goal = goal,
-            libraryCodes = libraryCodes,
+    private suspend fun buildContext(): AssistantContext =
+        AssistantContext(
+            entries =
+                diaryRepository
+                    .observeEntriesForDay(dayBoundaryProvider.startOfDay(clock.nowEpochMillis()))
+                    .first(),
+            goal = goalRepository.observeGoal().first(),
+            // The foods the user keeps, each with the nutrition the catalogue
+            // reports for it, so a plan for the day can be made of them.
+            library = actionExecutor.libraryFoods(),
         )
-    }
 
     private fun refreshConnectivity() {
         val provider = connectivityStatusProvider ?: return
