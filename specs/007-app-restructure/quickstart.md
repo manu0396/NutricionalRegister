@@ -143,6 +143,23 @@ gateway contract is specified in ADR-0016.
 
 ## Running the app
 
+Start the gateway, then build the app; there is nothing else to configure,
+because `gradle.properties` already carries the gateway address the app's
+debug build reads (`gateway/start-dev.sh` reissues the development certificate
+the app trusts and checks that the service answers):
+
+```
+./gateway/start-dev.sh
+./gradlew :androidApp:installDebug
+```
+
+On a phone instead of an emulator, point the app at the machine the gateway
+runs on:
+
+```
+./gradlew :androidApp:installDebug -PNUTRILOG_AI_PROXY_URL=https://<lan-ip>:8443
+```
+
 The Coach is the assistant screen and it is reachable from the whole app: the
 shell keeps a small assistant action next to the add-food action on every
 destination and inside its child routes, and it is hidden only while the Coach

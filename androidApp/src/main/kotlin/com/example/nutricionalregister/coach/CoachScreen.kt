@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -314,8 +314,11 @@ private fun Conversation(
                     .padding(horizontal = NutriLogSpacing.large)
                     .testTag("coach-transcript"),
         ) {
-            items(state.messages, key = { it.text + it.role.name }) { message ->
-                MessageBubble(message = message)
+            itemsIndexed(state.messages) { index, message ->
+                MessageBubble(
+                    message = message,
+                    modifier = Modifier.testTag("coach-message-$index"),
+                )
             }
 
             state.pendingProposal

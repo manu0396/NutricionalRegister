@@ -317,6 +317,7 @@ class CoachViewModelTest {
                 AssistantActionExecutor(
                     diaryRepository = diaryRepository,
                     productRepository = FakeProductSearchRepository(listOf(product())),
+                    savedProductRepository = savedProductRepository,
                     clock = clock,
                     dayBoundaryProvider = dayBoundaryProvider,
                 ),
