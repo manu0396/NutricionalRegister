@@ -72,6 +72,7 @@ public class ModuleDependencyPolicyPlugin : Plugin<Project> {
             projectPath == ":androidApp" ->
                 setOf(
                     ":core:data",
+                    ":feature:assistant",
                     ":feature:diary",
                     ":feature:scan",
                     ":feature:savedproducts",
@@ -82,6 +83,7 @@ public class ModuleDependencyPolicyPlugin : Plugin<Project> {
                 setOf(
                     ":core:data",
                     ":core:domain",
+                    ":feature:assistant",
                     ":feature:diary",
                     ":feature:scan",
                     ":feature:savedproducts",
