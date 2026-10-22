@@ -211,10 +211,7 @@ private fun AddFoodRoute(
             dependencies.searchViewModel.onQueryChanged(query)
         },
         onSearch = { dependencies.searchViewModel.submitSearch() },
-        onProductSelected = { product ->
-            dependencies.addFoodViewModel.selectProduct(product)
-            navigator.openAddFoodQuantity()
-        },
+        onProductSelected = { product -> navigator.openProduct(product.code) },
         onBarcodeScanned = { code ->
             dependencies.resolveBarcode(code) { resolution -> onBarcodeResolved(resolution, dependencies, navigator) }
         },

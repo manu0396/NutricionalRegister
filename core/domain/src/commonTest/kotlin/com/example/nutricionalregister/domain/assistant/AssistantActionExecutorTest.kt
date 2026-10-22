@@ -1,6 +1,7 @@
 package com.example.nutricionalregister.domain.assistant
 
 import com.example.nutricionalregister.domain.assistant.testing.FakeProductSearchRepository
+import com.example.nutricionalregister.domain.assistant.testing.FakeSavedProductRepository
 import com.example.nutricionalregister.domain.assistant.testing.RecordingDiaryRepository
 import com.example.nutricionalregister.domain.diary.DiaryEntry
 import com.example.nutricionalregister.domain.diary.MealType
@@ -313,6 +314,7 @@ class AssistantActionExecutorTest {
                 AssistantActionExecutor(
                     diaryRepository = repository,
                     productRepository = FakeProductSearchRepository(listOf(product()), vanishAfterFirstLookup = true),
+                    savedProductRepository = FakeSavedProductRepository(),
                     clock = EpochClock { 100L },
                     dayBoundaryProvider = FakeDayBoundaryProvider(),
                 )
@@ -357,6 +359,7 @@ class AssistantActionExecutorTest {
         AssistantActionExecutor(
             diaryRepository = repository,
             productRepository = FakeProductSearchRepository(products),
+            savedProductRepository = FakeSavedProductRepository(),
             clock = EpochClock { 100L },
             dayBoundaryProvider = FakeDayBoundaryProvider(),
         )

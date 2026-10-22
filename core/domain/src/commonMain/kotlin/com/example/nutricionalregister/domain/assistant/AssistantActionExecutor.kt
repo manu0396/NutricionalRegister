@@ -5,7 +5,9 @@ import com.example.nutricionalregister.domain.diary.DiaryEntry
 import com.example.nutricionalregister.domain.diary.DiaryRepository
 import com.example.nutricionalregister.domain.diary.NutritionCalculator
 import com.example.nutricionalregister.domain.product.EpochClock
+import com.example.nutricionalregister.domain.product.Product
 import com.example.nutricionalregister.domain.product.ProductSearchRepository
+import com.example.nutricionalregister.domain.purchase.SavedProductRepository
 import kotlinx.coroutines.flow.first
 
 /**
@@ -24,6 +26,7 @@ import kotlinx.coroutines.flow.first
 public class AssistantActionExecutor(
     private val diaryRepository: DiaryRepository,
     private val productRepository: ProductSearchRepository,
+    private val savedProductRepository: SavedProductRepository,
     private val clock: EpochClock,
     private val dayBoundaryProvider: DayBoundaryProvider,
 ) {
@@ -64,8 +67,7 @@ public class AssistantActionExecutor(
         if (!action.quantityGrams.isFinite() || action.quantityGrams <= 0.0) {
             return ActionValidation.Rejected(QUANTITY_REASON)
         }
-        val product = productRepository.getProduct(action.productCode)
-        return if (product == null) {
+        return if (productFor(action.productCode) == null) {
             ActionValidation.Rejected(unknownProductReason(action.productCode))
         } else {
             ActionValidation.Valid
@@ -90,7 +92,7 @@ public class AssistantActionExecutor(
     }
 
     private suspend fun applyLogFood(action: AssistantAction.LogFood): ActionOutcome {
-        val product = productRepository.getProduct(action.productCode)
+        val product = productFor(action.productCode)
         if (product == null) {
             return ActionOutcome.Rejected(unknownProductReason(action.productCode))
         }
@@ -132,6 +134,23 @@ public class AssistantActionExecutor(
         diaryRepository.updateEntry(updated)
         return ActionOutcome.Applied(updated.id)
     }
+
+    /**
+     * The food a proposal may name, or null when the app does not know it.
+     *
+     * The catalogue copy is read first, because it carries the nutrition; a
+     * food the user keeps but the catalogue cache does not have is read from
+     * the saved record, the same fallback the product detail uses. Without it
+     * a proposal for a food the user keeps would always be rejected, and the
+     * Coach would be unable to log the food it was given (FR-024).
+     */
+    private suspend fun productFor(code: String): Product? =
+        productRepository.getProduct(code)
+            ?: savedProductRepository
+                .observeSaved()
+                .first()
+                .firstOrNull { saved -> saved.code == code }
+                ?.toProduct()
 
     /**
      * The entry with [entryId] among the entries of the current day, or null

@@ -318,15 +318,17 @@ private fun Conversation(
                 MessageBubble(message = message)
             }
 
-            state.pendingProposal?.let { proposal ->
-                item(key = "proposal") {
-                    ProposalCard(
-                        reply = proposal,
-                        onConfirm = onConfirmProposal,
-                        onDismiss = onDismissProposal,
-                    )
+            state.pendingProposal
+                ?.takeIf { proposal -> proposal.actions.isNotEmpty() }
+                ?.let { proposal ->
+                    item(key = "proposal") {
+                        ProposalCard(
+                            reply = proposal,
+                            onConfirm = onConfirmProposal,
+                            onDismiss = onDismissProposal,
+                        )
+                    }
                 }
-            }
 
             if (state.isSending) {
                 item(key = "sending") {
@@ -416,6 +418,11 @@ private fun ProposalCard(
             verticalArrangement = Arrangement.spacedBy(NutriLogSpacing.medium),
             modifier = Modifier.padding(NutriLogSpacing.large),
         ) {
+            Text(
+                text = reply.text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
             Text(
                 text = "The Coach proposes",
                 style = MaterialTheme.typography.titleSmall,

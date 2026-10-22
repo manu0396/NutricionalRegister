@@ -113,6 +113,7 @@ public class AppDependencies(
                 AssistantActionExecutor(
                     diaryRepository = runtime.diaryRepository,
                     productRepository = runtime.productSearchRepository,
+                    savedProductRepository = runtime.savedProductRepository,
                     clock = clock,
                     dayBoundaryProvider = runtime.dayBoundaryProvider,
                 ),

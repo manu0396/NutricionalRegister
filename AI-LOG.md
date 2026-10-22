@@ -512,3 +512,40 @@ do not infer successful verification from generated files alone.
 - **Results**: all of the above `BUILD SUCCESSFUL`; the schema migration chain
   verifies from v1 on a fresh checkout; the Konsist architecture test now
   matches the real package roots and fails when it inspects no file.
+
+### Making the assistant work (spec 007, follow-up)
+
+- **Scope**: the review asked for images in the search, a quieter top bar, and
+  a Coach that is reachable from the whole app and actually works. The reach
+  and the images were app changes; "works" required the service the app talks
+  to, which did not exist anywhere, so it is now the repository's
+  `gateway/`, with its own ADR-0020.
+- **What changed in the app**: the add-food flow's search results and Library
+  rows render the food's thumbnail (verified by screenshot colour count), the
+  flow's top title is gone, the shell carries an assistant action beside the
+  add-food action on every destination (and inside their child routes), a
+  debuggable build treats the premium as unlocked so the Coach can be
+  exercised before a store purchase exists, choosing a food in the flow opens
+  its detail route (where it can be kept for the next time), a proposal with
+  nothing to confirm is no longer rendered, and the proposal card shows what
+  the assistant said. The executor now resolves a proposal's food from the
+  saved record when the catalogue cache does not have it, because a Coach
+  unable to log the food it was given is a dead end (FR-024).
+- **Commands run**: `:core:domain:testAndroidHostTest :core:domain:koverVerify
+  :core:domain:ktlintCheck`, `:androidApp:assembleDebug`,
+  `:androidApp:ktlintCheck`, and the live pass on an emulator (install, launch,
+  search, save, open the Coach, consent, ask, apply, verify the day).
+- **Results**: the assistant answered through the gateway, proposed a log of
+  the food the user keeps, the user confirmed it and the day's totals went from
+  0 kcal to 67 kcal / 4.2 g protein as computed from the product's nutrition.
+  The service's health, its rejection of a malformed body and an empty
+  conversation, and its route guard were checked with curl over HTTPS.
+- **Failures/corrections during the work**: the emulated emulator's IME covered
+  the composer, so the send control was unreachable by a naive tap; the flow
+  was completed after dismissing the keyboard. The Anthropic key available in
+  the environment has no credit balance, so the answer came from the
+  gateway's deterministic fallback rather than the model; with a funded key
+  the same container answers with the model and no app changes.
+- **Production prerequisites not satisfied**: device attestation and the
+  enforced server-side entitlement (ADR-0020's recorded pending work), and a
+  funded provider key, which only the publisher can supply.
