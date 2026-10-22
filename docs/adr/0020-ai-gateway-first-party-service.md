@@ -32,7 +32,11 @@ any number of replicas.
 
 The model is a **configuration value** of the gateway, not a fact of the app:
 `AI_GATEWAY_MODEL` names it, the provider's key is read from the environment at
-run time, and a provider migration is a deploy, never an app release.
+run time, and a provider migration is a deploy, never an app release. The
+gateway speaks **two protocols**, Anthropic's Messages API (a funded key) and
+the OpenAI-compatible chat format that a hosted provider, a self-hosted Ollama
+or a local LM Studio speak, so the development harness of a real deployment
+answers with a real model without carrying a key.
 
 When no provider key is configured, or the provider fails, the gateway answers
 with a **deterministic coach** computed from the same minimal context the app

@@ -160,6 +160,11 @@ runs on:
 ./gradlew :androidApp:installDebug -PNUTRILOG_AI_PROXY_URL=https://<lan-ip>:8443
 ```
 
+While the provider key is not funded, the Coach still answers with a real
+model when the machine runs one (an Ollama or LM Studio): `gateway/start-dev.sh`
+picks that engine and the model it serves itself, so a question asked in the
+app is answered by the model and not by a fixed sentence.
+
 The Coach is the assistant screen and it is reachable from the whole app: the
 shell keeps a small assistant action next to the add-food action on every
 destination and inside its child routes, and it is hidden only while the Coach

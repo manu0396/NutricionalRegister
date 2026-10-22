@@ -549,3 +549,31 @@ do not infer successful verification from generated files alone.
 - **Production prerequisites not satisfied**: device attestation and the
   enforced server-side entitlement (ADR-0020's recorded pending work), and a
   funded provider key, which only the publisher can supply.
+
+
+### The Coach answers the question that was asked (spec 007, follow-up)
+
+- **Scope**: the review said the coach always replied the same sentence. The
+  gateway had fallen back to its deterministic coach, because the only key in
+  the environment carries no credit.
+- **What changed**: the gateway now speaks the OpenAI-compatible chat format as
+  well, so the coach answers with whatever the environment points it at (a
+  hosted provider, a self-hosted Ollama, a local LM Studio), and
+  `gateway/start-dev.sh` prefers a local engine that answers and names the
+  model it serves, so a developer's build answers with a model without
+  carrying a key. The system prompt is rewritten so the prose is asked for
+  first and the actions last, which stops a small model answering in actions
+  alone. The gateway now also computes the day's sums itself and hands them to
+  the model, so a small model phrases numbers instead of doing arithmetic.
+  `llama3.2:3b` was pulled on this machine for the harness.
+- **Commands run**: `node --check` on the gateway's sources; three questions
+  and one off-domain question through `curl` over HTTPS against the app's own
+  contract; the app's flow on the emulator.
+- **Results**: four different answers, each to the question that was asked:
+  the calories left (computed by the gateway), the food logged so far, the
+  protein advice against the goal, and an honest "I don't have information
+  about the weather" for something that is not the coach's subject. A request
+  to log 200 g proposed the correct log action.
+- **Failures/corrections during the work**: the local engine's model name is
+  the engine's, so the harness was corrected to name the model it serves;
+  the deterministic fallback stays the answer of last resort.

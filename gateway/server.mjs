@@ -21,7 +21,7 @@ import fs from "node:fs";
 
 import {readBody} from "./body.mjs";
 import {rateLimitedClient} from "./rate-limit.mjs";
-import {generate, isConfigured, model} from "./provider.mjs";
+import {generate, isConfigured, model, providerKind} from "./provider.mjs";
 import {fallbackAnswer} from "./fallback.mjs";
 import {actionsFrom, contextFor, conversationFor, systemPrompt} from "./coach.mjs";
 
@@ -137,7 +137,7 @@ async function route(request, response) {
   response.setHeader("X-Content-Type-Options", "nosniff");
 
   if (request.method === "GET" && request.url === HEALTH_PATH) {
-    respond(response, 200, {status: "ok", model: model(), provider: isConfigured()});
+    respond(response, 200, {status: "ok", model: model(), provider: isConfigured(), kind: providerKind()});
     return;
   }
 
@@ -220,7 +220,7 @@ const server = factory((request, response) => {
 server.headersTimeout = 35_000;
 server.requestTimeout = 40_000;
 server.listen(PORT, () => {
-  log(`the gateway listens on ${server.address().port}, model ${model()}, provider ${isConfigured()}`);
+  log(`the gateway listens on ${server.address().port}, model ${model()}, provider ${providerKind()}`);
 });
 
 for (const signal of ["SIGINT", "SIGTERM"]) {

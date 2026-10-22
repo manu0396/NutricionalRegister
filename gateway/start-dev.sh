@@ -73,9 +73,36 @@ mkdir -p "$(dirname "$APP_CA")"
 cp "$CERT_DIR/ca.pem" "$APP_CA"
 
 # 4. Start the gateway and prove it answers.
+# The coach answers with whatever the environment points the gateway at. A
+# funded provider key is the production answer; a local OpenAI-compatible
+# engine (an Ollama or LM Studio on this machine) is the developer's, and it is
+# used only when one is reachable, so the coach answers with a real model
+# without carrying anyone's key.
+LOCAL_ENGINE=""
+case "${NUTRILOG_GATEWAY_PROVIDER:-}" in
+  anthropic) ;;
+  local)
+    LOCAL_ENGINE="AI_GATEWAY_OPENAI_BASE_URL=${AI_GATEWAY_OPENAI_BASE_URL:-http://127.0.0.1:11434}"
+    ;;
+  "")
+    # A local engine that answers is preferred, because the environment's key
+    # may not carry credit; a funded key is the production answer and is
+    # chosen explicitly with NUTRILOG_GATEWAY_PROVIDER=anthropic.
+    if curl -s --max-time 3 http://127.0.0.1:11434/v1/models | grep -q '"data"'; then
+      LOCAL_ENGINE="AI_GATEWAY_OPENAI_BASE_URL=http://127.0.0.1:11434"
+      # The model the local engine actually serves, so the gateway never asks
+      # for a hosted model's name on an engine that does not have it.
+      LOCAL_MODEL=$(curl -s --max-time 3 http://127.0.0.1:11434/v1/models |
+        python3 -c 'import json,sys; models=json.load(sys.stdin)["data"]; print(models[0]["id"] if models else "")')
+      [ -n "$LOCAL_MODEL" ] && LOCAL_ENGINE="AI_GATEWAY_OPENAI_BASE_URL=http://127.0.0.1:11434 AI_GATEWAY_MODEL=$LOCAL_MODEL"
+    fi
+    ;;
+esac
+
 nohup env PORT="$PORT" \
   AI_GATEWAY_TLS_CERT="$CERT_DIR/server.pem" \
   AI_GATEWAY_TLS_KEY="$CERT_DIR/server.key" \
+  ${LOCAL_ENGINE} \
   node server.mjs > "$SERVER_LOG" 2>&1 &
 
 for _ in 1 2 3 4 5 6 7 8 9 10; do

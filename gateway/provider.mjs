@@ -1,50 +1,71 @@
 /**
  * The provider behind the gateway (ADR-0020).
  *
- * The transport to the model is one function that returns the generated text;
- * the provider is a configuration choice of this service and not a fact the
+ * The transport to the model is one function that returns the generated text.
+ * The provider is a configuration choice of this service and not a fact the
  * Coach's contract depends on, which is what ADR-0016's replacement story
- * promises.
+ * promises: the same envelope is served by whatever the environment points the
+ * gateway at.
+ *
+ * Two protocols are spoken:
+ * - Anthropic's own Messages API (`ANTHROPIC_API_KEY`);
+ * - the OpenAI-compatible chat format, which is what a hosted provider, a
+ *   self-hosted Ollama or a local LM Studio speak (`AI_GATEWAY_OPENAI_BASE_URL`
+ *   plus an optional key). Self-hosted local engines are the development
+ *   harness of a real deployment; the production answer is the model a funded
+ *   key reaches.
  */
 
-const API_VERSION = "2023-06-01";
+const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
+const ANTHROPIC_API_VERSION = "2023-06-01";
 const DEFAULT_MODEL = "claude-sonnet-4-5";
-const API_URL = "https://api.anthropic.com/v1/messages";
+
+/** The OpenAI-compatible path every chat-shaped endpoint shares. */
+const OPENAI_CHAT_PATH = "/v1/chat/completions";
+const DEFAULT_OPENAI_BASE_URL = "http://127.0.0.1:11434";
+
 const UPSTREAM_TIMEOUT_MS = process.env.AI_GATEWAY_TIMEOUT_MS
   ? Number(process.env.AI_GATEWAY_TIMEOUT_MS)
   : 90_000;
 
 /** The model the conversations are generated with. */
 export function model() {
-  return process.env.AI_GATEWAY_MODEL || DEFAULT_MODEL;
+  return process.env.AI_GATEWAY_MODEL || process.env.OPENAI_MODEL || DEFAULT_MODEL;
 }
 
-/** Whether a provider key is configured, so the health check can say so. */
+/** Whether a provider is configured, so the health check can say so. */
 export function isConfigured() {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  return Boolean(process.env.ANTHROPIC_API_KEY || process.env.AI_GATEWAY_OPENAI_BASE_URL || process.env.OPENAI_API_KEY);
 }
 
-/**
- * Generates one completion.
- *
- * The provider's credentials are read from the environment and are never
- * logged. A failure of the upstream is reported as an opaque gateway error:
- * the caller answers 502, and the reply never leaks the upstream's internals.
- */
+/** The way the upstream is called: Anthropic's API when a key for it is set. */
+function speakAnthropic() {
+  return Boolean(process.env.ANTHROPIC_API_KEY) && !process.env.AI_GATEWAY_OPENAI_BASE_URL;
+}
+
+/** Answers one completion and reports the text it generated. */
 export async function generate(request) {
+  const completion = speakAnthropic() ? await anthropic(request) : await openAiCompatible(request);
+  const text = (completion || "").trim();
+  if (!text) throw new Error("no-content");
+  return {text};
+}
+
+/** One completion over Anthropic's own API. */
+async function anthropic(request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("provider-not-configured");
 
   const upstream = new AbortController();
   const timer = setTimeout(() => upstream.abort(), UPSTREAM_TIMEOUT_MS);
   try {
-    const response = await fetch(API_URL, {
+    const response = await fetch(ANTHROPIC_API_URL, {
       method: "POST",
       signal: upstream.signal,
       headers: {
         "content-type": "application/json",
         "x-api-key": apiKey,
-        "anthropic-version": API_VERSION,
+        "anthropic-version": ANTHROPIC_API_VERSION,
       },
       body: JSON.stringify({
         model: request.model,
@@ -53,17 +74,67 @@ export async function generate(request) {
         messages: request.messages,
       }),
     });
-
     if (!response.ok) throw new Error(`upstream-status-${response.status}`);
 
     const payload = await response.json();
-    const text = (payload?.content || [])
+    return (payload?.content || [])
       .filter((block) => block && block.type === "text")
       .map((block) => block.text)
       .filter(Boolean)
       .join("\n");
-    return {text};
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * One completion over the OpenAI-compatible chat format.
+ *
+ * The base URL decides whether the model is hosted or on this machine, and the
+ * conversation is sent in the shape that format defines: a system turn first,
+ * then the app's turns.
+ */
+async function openAiCompatible(request) {
+  const baseUrl = process.env.AI_GATEWAY_OPENAI_BASE_URL || process.env.OPENAI_API_BASE_URL || DEFAULT_OPENAI_BASE_URL;
+  const apiKey = process.env.OPENAI_API_KEY || process.env.OLLAMA_API_KEY;
+
+  const upstream = new AbortController();
+  const timer = setTimeout(() => upstream.abort(), UPSTREAM_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${baseUrl.replace(/\/+$/, "")}${OPENAI_CHAT_PATH}`, {
+      method: "POST",
+      signal: upstream.signal,
+      headers: {
+        "content-type": "application/json",
+        ...(apiKey ? {authorization: `Bearer ${apiKey}`} : {}),
+      },
+      body: JSON.stringify({
+        model: request.model,
+        max_tokens: request.maxTokens,
+        temperature: 0.4,
+        messages: [
+          {role: "system", content: request.system},
+          ...request.messages,
+        ],
+      }),
+    });
+    if (!response.ok) throw new Error(`upstream-status-${response.status}`);
+
+    const payload = await response.json();
+    return payload?.choices
+      ?.map((choice) => choice?.message?.content)
+      .filter(Boolean)
+      .join("\n");
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** The name the health check mentions, so the operator can see what it answers with. */
+export function providerKind() {
+  if (speakAnthropic()) return "anthropic";
+  if (process.env.AI_GATEWAY_OPENAI_BASE_URL || process.env.OPENAI_API_BASE_URL || process.env.OPENAI_API_KEY) {
+    return "openai-compatible";
+  }
+  return "none";
 }

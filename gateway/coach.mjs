@@ -10,25 +10,43 @@
 
 const MARKER = "### ACTIONS";
 
-/** The system prompt of the Coach, built from the kinds of action the app honours. */
+/**
+ * The system prompt of the Coach, built from the kinds of action the app
+ * honours.
+ *
+ * The order matters: the prose is asked for FIRST and the actions LAST, so a
+ * model that is tempted to answer in actions alone still writes the answer to
+ * the question it was asked. The marker is what the gateway splits the answer
+ * on, which is why the exact line matters as much as the words.
+ */
 export function systemPrompt(meals) {
   const kinds = [...meals].join(" | ");
   return (
-    "You are the Coach, the nutrition assistant of a food-tracking app. " +
-    "You answer with the food the user logged today, the targets they set and the " +
-    "foods they keep in their library.\n" +
-    "Never invent a nutrition fact for a food you were not given; when a nutrient " +
-    "is missing from the data, say plainly that it is unknown instead of guessing. " +
-    "Answer in the language the user writes in, be concrete and keep the answer short.\n" +
-    "You can propose changes to the user's diary, and the app applies one only after " +
-    `the user confirms it. A change is exactly one of these kinds: a log, with a {"type":"log",` +
-    `"productCode":"<a code from the libraryCodes you were given>","quantityGrams":100,` +
-    `"meal":"${kinds}"}; a remove, with {"type":"remove","entryId":<an entryId of the entries ` +
-    'you were given"}; a change, with {"type":"change","entryId":<an entryId>,"quantityGrams":100,' +
-    '"meal":"..."}, where the quantity or the meal may be present and the other left out.\n' +
-    "When you propose nothing, end your answer with an empty array.\n" +
-    "\nEnd your answer with a line that is exactly `### ACTIONS` followed by a JSON array " +
-    "of the changes, and nothing after it."
+    "You are the Coach, the nutrition assistant of a food-tracking app.\n" +
+    "DATA: the app sends the day's entries, the goal they are measured against " +
+    "and the codes of the foods the user keeps. It is the only source you have.\n" +
+    "\n" +
+    "How you answer:\n" +
+    "- first, in one to three sentences, answer THE question the user asked, " +
+    "using the DATA: what was logged, its totals, what remains against the goal, " +
+    "and what is unknown, said as unknown;\n" +
+    "- answer in the language the user wrote in;\n" +
+    "- never invent a nutrition fact for a food absent from the DATA;\n" +
+    "- if the question is not about food, the day or the diary, say what you can " +
+    "answer here instead of it.\n" +
+    "\n" +
+    "You may also propose at most two changes to the diary, and the app applies " +
+    `none of them before the user confirms. A change is one of exactly these kinds:\n` +
+    `{"type":"log","productCode":"<a libraryCodes code>","quantityGrams":100,"meal":"${kinds}"}\n` +
+    `{"type":"remove","entryId":<an entryId from the DATA>}\n` +
+    `{"type":"change","entryId":<an entryId>,"quantityGrams":100,"meal":"${kinds}"} where a ` +
+    "quantity or a meal may be present and the other left out\n" +
+    "Never propose a change when the user did not ask for one.\n" +
+    "\n" +
+    "Finish your answer with a line that reads exactly:\n" +
+    "### ACTIONS\n" +
+    "followed by a JSON array of the changes (or [] when you propose none), and " +
+    "nothing after it. No other line may start with ###."
   );
 }
 
@@ -43,12 +61,48 @@ export function contextFor(context) {
     {
       entries: context.entries,
       goal: context.goal,
+      totals: summaryOf(context.entries),
+      remaining: {
+        energyKcal: remainingKcal(context),
+      },
       libraryCodes: context.libraryCodes,
     },
     null,
     2,
   );
 }
+
+/**
+ * The day's numbers, computed by the gateway and never by the model.
+ *
+ * A small model that does arithmetic is a model that is wrong, so the gateway
+ * sums what the app reported and says what is unknown in words; the model's
+ * job is the phrasing and the advice, never the sums.
+ */
+export function summaryOf(entries) {
+  const nutrient = (key) => {
+    const reported = entries.filter((entry) => typeof entry[key] === "number");
+    if (reported.length === 0) return null;
+    const value = reported.reduce((total, entry) => total + entry[key], 0);
+    return reported.length < entries.length ? {atLeast: Math.round(value)} : {value: Math.round(value)};
+  };
+  return {
+    energyKcal: nutrient("energyKcal"),
+    proteinGrams: nutrient("proteinGrams"),
+    carbohydrateGrams: nutrient("carbohydrateGrams"),
+    fatGrams: nutrient("fatGrams"),
+    entries: entries.length,
+  };
+}
+
+/** The calories the day still has room for, or null when the day is unknown. */
+function remainingKcal(context) {
+  const totals = summaryOf(context.entries).energyKcal;
+  if (!totals) return null;
+  const consumed = totals.atLeast ?? totals.value;
+  return Math.max(0, Math.round(context.goal.energyKcal - consumed));
+}
+
 
 /**
  * The actions proposed in the reply, already cleaned.

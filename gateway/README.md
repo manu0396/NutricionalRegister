@@ -39,8 +39,9 @@ a load balancer.
 | Variable | Meaning |
 | --- | --- |
 | `PORT` | the port the service listens on (default 8080). |
-| `ANTHROPIC_API_KEY` | the provider key. Configure it to answer with the model; leave it out and the service answers with its deterministic fallback. |
-| `AI_GATEWAY_MODEL` | the model to generate with (default `claude-sonnet-4-5`). |
+| `ANTHROPIC_API_KEY` | the provider key for Anthropic's own API. Configure it to answer with the model; leave it out and the service answers with whatever the next line points at. |
+| `AI_GATEWAY_OPENAI_BASE_URL` | an OpenAI-compatible chat endpoint (`/v1/chat/completions`): a hosted provider, a self-hosted Ollama or a local LM Studio, with an optional `OPENAI_API_KEY`. |
+| `AI_GATEWAY_MODEL` | the model to generate with (default `claude-sonnet-4-5`; a local engine names one of its own). |
 | `AI_GATEWAY_QUOTA_PER_MINUTE` | requests a single client address may make per minute (default 20). |
 | `AI_GATEWAY_TIMEOUT_MS` | the upstream call's timeout in milliseconds (default 90000). |
 | `AI_GATEWAY_TLS_CERT`, `AI_GATEWAY_TLS_KEY` | for a local harness only: the service listens with HTTPS. In a deployed container the platform ingress terminates TLS in front of it. |
@@ -57,6 +58,17 @@ deployment has. To point the app at a gateway:
 ```bash
 node gateway/server.mjs            # listens on 8080, talks to the model when a key is set
 curl -s localhost:8080/v1/health
+```
+
+## Run the service with a local model (the development harness)
+
+A real deployment answers with the model a funded key reaches. While a key is
+not funded, the coach still answers with a real model when one runs on the
+machine:
+
+```bash
+ollama pull llama3.2:3b       # two gigabytes, no key needed
+./gateway/start-dev.sh        # picks the engine's model itself and starts the gateway
 ```
 
 ## Run the service as a container
