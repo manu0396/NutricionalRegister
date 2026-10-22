@@ -91,7 +91,7 @@
 - [x] **T057** Update the existing instrumented tests for the new destinations and routes (fa732ec)
 - [ ] **T058** Write the scanner instrumented tests against a fake decoder, so no test needs a camera
 - [x] **T059** Run the full unit-test suite and fix the failures (daeadaa)
-- [ ] **T060** Run the Android instrumented suite and fix the failures
+- [x] **T060** Run the Android instrumented suite and fix the failures
 - [x] **T061** Run the coverage gate, the architecture tests, ktlint, lint, the plain-text gate and the SQLDelight migration verification (unknown)
 - [x] **T062** Review every screen in light and dark mode against the design rules, and confirm no screen is left on the pre-restructure visuals (unknown)
 - [ ] **T063** Measure the release APK and the `Shared.xcframework` sizes and record them in ADR-0014, ADR-0015 and ADR-0017

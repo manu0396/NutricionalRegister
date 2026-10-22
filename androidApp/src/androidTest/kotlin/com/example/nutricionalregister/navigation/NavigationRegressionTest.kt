@@ -29,25 +29,25 @@ class NavigationRegressionTest {
     val rule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun `the app opens on the diary with the three destinations`() {
+    fun `appOpensOnTheDiaryWithTheThreeDestinations`() {
         rule.onNodeWithText("Today").assertIsDisplayed()
         rule.onNodeWithTag("nutrilog-bottom-bar").assertIsDisplayed()
     }
 
     @Test
-    fun `switching destinations always lands on that destination's own screen`() {
-        rule.onNodeWithText("Library").performClick()
+    fun `switchingDestinationsAlwaysLandsOnThatDestinationsOwnScreen`() {
+        rule.onNodeWithTag("bottom-bar-library").performClick()
         rule.onNodeWithText("The foods you keep, ready to log in one tap.").assertIsDisplayed()
-        rule.onNodeWithText("More").performClick()
+        rule.onNodeWithTag("bottom-bar-more").performClick()
         rule.onNodeWithText("Your goals and the rest of the app.").assertIsDisplayed()
-        rule.onNodeWithText("Today").performClick()
+        rule.onNodeWithTag("bottom-bar-today").performClick()
         rule.onNodeWithText("The foods you keep, ready to log in one tap.").assertDoesNotExist()
     }
 
     @Test
-    fun `the bottom bar is visible on the three roots and hidden inside a child route`() {
+    fun `theBottomBarIsVisibleOnTheThreeRootsAndHiddenInsideAChildRoute`() {
         rule.onNodeWithTag("nutrilog-bottom-bar").assertIsDisplayed()
-        rule.onNodeWithText("Library").performClick()
+        rule.onNodeWithTag("bottom-bar-library").performClick()
         rule.onNodeWithTag("nutrilog-bottom-bar").assertIsDisplayed()
 
         rule.onNodeWithTag("nutrilog-add-food-fab").performClick()
@@ -56,7 +56,7 @@ class NavigationRegressionTest {
     }
 
     @Test
-    fun `leaving a child route returns to the destination root and the bar comes back`() {
+    fun `leavingAChildRouteReturnsToTheDestinationRootAndTheBarComesBack`() {
         rule.onNodeWithTag("nutrilog-add-food-fab").performClick()
         rule.onNodeWithText("Add food").assertIsDisplayed()
         rule.onNodeWithTag("add-food-back").performClick()
@@ -65,8 +65,8 @@ class NavigationRegressionTest {
     }
 
     @Test
-    fun `the destination that is already showing does not push a second entry`() {
-        repeat(2) { rule.onNodeWithText("Library").performClick() }
+    fun `theDestinationThatIsAlreadyShowingDoesNotPushASecondEntry`() {
+        repeat(2) { rule.onNodeWithTag("bottom-bar-library").performClick() }
         rule.onNodeWithText("The foods you keep, ready to log in one tap.").assertIsDisplayed()
         rule.onNodeWithTag("nutrilog-add-food-fab").assertIsDisplayed()
     }
