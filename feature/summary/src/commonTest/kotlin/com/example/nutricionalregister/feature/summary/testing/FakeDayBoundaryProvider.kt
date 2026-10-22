@@ -18,7 +18,10 @@ internal class FakeDayBoundaryProvider(
         return floorDays * dayLengthMillis
     }
 
-    override fun addDays(dayStartEpochMillis: Long, days: Int): Long = dayStartEpochMillis + days * dayLengthMillis
+    override fun addDays(
+        dayStartEpochMillis: Long,
+        days: Int,
+    ): Long = dayStartEpochMillis + days * dayLengthMillis
 }
 
 internal const val MILLIS_PER_DAY: Long = 86_400_000L

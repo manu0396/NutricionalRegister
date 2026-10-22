@@ -20,7 +20,10 @@ public class FakeDayBoundaryProvider(
         return origin + floorDays * dayLengthMillis
     }
 
-    override fun addDays(dayStartEpochMillis: Long, days: Int): Long = dayStartEpochMillis + days * dayLengthMillis
+    override fun addDays(
+        dayStartEpochMillis: Long,
+        days: Int,
+    ): Long = dayStartEpochMillis + days * dayLengthMillis
 }
 
 /** The length of a day in milliseconds. */

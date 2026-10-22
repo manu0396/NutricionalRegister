@@ -97,8 +97,7 @@ class SummaryViewModelTest {
             viewModel.clear()
         }
 
-    private fun scope(scheduler: TestCoroutineScheduler): CoroutineScope =
-        CoroutineScope(StandardTestDispatcher(scheduler))
+    private fun scope(scheduler: TestCoroutineScheduler): CoroutineScope = CoroutineScope(StandardTestDispatcher(scheduler))
 
     private fun viewModel(
         repository: FakeDiaryRepository,

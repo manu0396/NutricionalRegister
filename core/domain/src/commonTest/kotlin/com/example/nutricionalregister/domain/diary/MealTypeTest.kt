@@ -15,8 +15,20 @@ class MealTypeTest {
 
     @Test
     fun `every meal has a display name and a distinct order`() {
-        assertEquals(MealType.entries.size, MealType.ordered.map { it.order }.distinct().size)
-        assertEquals(MealType.entries.size, MealType.entries.map { it.displayName }.distinct().size)
+        assertEquals(
+            MealType.entries.size,
+            MealType.ordered
+                .map { it.order }
+                .distinct()
+                .size,
+        )
+        assertEquals(
+            MealType.entries.size,
+            MealType.entries
+                .map { it.displayName }
+                .distinct()
+                .size,
+        )
     }
 
     @Test

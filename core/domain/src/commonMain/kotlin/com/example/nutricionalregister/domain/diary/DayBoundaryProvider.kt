@@ -23,5 +23,8 @@ public interface DayBoundaryProvider {
      * keeps the result exact across daylight-saving transitions, where a day
      * can be 23 or 25 hours long.
      */
-    public fun addDays(dayStartEpochMillis: Long, days: Int): Long
+    public fun addDays(
+        dayStartEpochMillis: Long,
+        days: Int,
+    ): Long
 }

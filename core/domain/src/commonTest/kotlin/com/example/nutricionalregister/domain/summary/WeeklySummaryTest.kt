@@ -29,7 +29,12 @@ class WeeklySummaryTest {
 
         assertTrue(summary.days.all { it.isEmpty })
         assertTrue(summary.days.all { it.entryCount == 0 })
-        assertEquals(0.0, summary.days.first().totals.energyKcal)
+        assertEquals(
+            0.0,
+            summary.days
+                .first()
+                .totals.energyKcal,
+        )
     }
 
     @Test

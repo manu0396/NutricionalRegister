@@ -95,7 +95,8 @@ class DiaryViewModelTest {
     fun updatingTheGoalStoresItAndTheStateReflectsIt() =
         runTest {
             val goalRepository = FakeNutritionGoalRepository()
-            val viewModel = viewModel(diaryRepository = FakeDiaryRepository(), scope = scope(testScheduler), goalRepository = goalRepository)
+            val viewModel =
+                viewModel(diaryRepository = FakeDiaryRepository(), scope = scope(testScheduler), goalRepository = goalRepository)
 
             viewModel.updateGoal(NutritionGoal(energyKcal = 2400))
             advanceUntilIdle()
@@ -137,8 +138,7 @@ class DiaryViewModelTest {
             viewModel.clear()
         }
 
-    private fun scope(scheduler: TestCoroutineScheduler): CoroutineScope =
-        CoroutineScope(StandardTestDispatcher(scheduler))
+    private fun scope(scheduler: TestCoroutineScheduler): CoroutineScope = CoroutineScope(StandardTestDispatcher(scheduler))
 
     private fun viewModel(
         diaryRepository: FakeDiaryRepository,

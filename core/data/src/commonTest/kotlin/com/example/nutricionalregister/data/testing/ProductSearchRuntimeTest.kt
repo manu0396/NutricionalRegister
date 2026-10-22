@@ -119,5 +119,8 @@ private object StubNutritionGoalRepository : NutritionGoalRepository {
 private object StubDayBoundaryProvider : DayBoundaryProvider {
     override fun startOfDay(epochMillis: Long): Long = epochMillis
 
-    override fun addDays(dayStartEpochMillis: Long, days: Int): Long = dayStartEpochMillis
+    override fun addDays(
+        dayStartEpochMillis: Long,
+        days: Int,
+    ): Long = dayStartEpochMillis
 }

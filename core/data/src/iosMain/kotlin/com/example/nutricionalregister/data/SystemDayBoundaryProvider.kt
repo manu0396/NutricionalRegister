@@ -23,7 +23,10 @@ internal class SystemDayBoundaryProvider : DayBoundaryProvider {
         return (start.timeIntervalSince1970 * MILLIS_PER_SECOND).toLong()
     }
 
-    override fun addDays(dayStartEpochMillis: Long, days: Int): Long {
+    override fun addDays(
+        dayStartEpochMillis: Long,
+        days: Int,
+    ): Long {
         val date = NSDate.dateWithTimeIntervalSince1970(dayStartEpochMillis / MILLIS_PER_SECOND)
         val components = NSDateComponents()
         components.day = days.toLong()

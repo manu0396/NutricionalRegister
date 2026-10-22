@@ -21,7 +21,10 @@ internal class SystemDayBoundaryProvider : DayBoundaryProvider {
         return calendar.timeInMillis
     }
 
-    override fun addDays(dayStartEpochMillis: Long, days: Int): Long {
+    override fun addDays(
+        dayStartEpochMillis: Long,
+        days: Int,
+    ): Long {
         val calendar = Calendar.getInstance()
         calendar.timeInMillis = dayStartEpochMillis
         calendar.add(Calendar.DAY_OF_YEAR, days)
