@@ -6,9 +6,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.DateRange
-import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -21,21 +21,24 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.nutricionalregister.domain.navigation.NutriLogDestination
 
 /**
- * The persistent bottom navigation bar (FR-005, FR-008, FR-017).
+ * The persistent bottom navigation bar (FR-009, FR-031).
  *
- * Renders exactly the three [NutriLogDestination] entries and indicates the
- * current one through the item's selected flag plus its icon *and* label, so the
- * current destination is never conveyed by colour alone and stays understandable
- * with accessibility services (SC-004). Each item keeps Material's 48 dp minimum
- * touch target and carries its [NutriLogDestination.label] as its accessible name.
- * Uses outlined icons for unselected states and filled icons when selected for a
- * cleaner, more professional look.
+ * Renders exactly the three [NutriLogDestination] entries. Search is not one
+ * of them: a catalogue is an input to the diary, not a peer of it, so the
+ * search lives in the add-food flow and in the Library empty state.
+ *
+ * The current destination is conveyed by the item's selected flag plus its icon
+ * *and* label, so it is never conveyed by colour alone and stays understandable
+ * with accessibility services (SC-004). Each item keeps Material's 48 dp
+ * minimum touch target and carries its [NutriLogDestination.label] as its
+ * accessible name.
  *
  * @param current the destination currently displayed.
- * @param onSelect invoked with the tapped destination (including the current one,
- *   so the shell can decide whether to no-op).
+ * @param onSelect invoked with the tapped destination, including the current
+ *   one, so the shell can decide whether to treat it as a no-op.
  */
 @Composable
 public fun NutriLogBottomBar(
@@ -45,7 +48,7 @@ public fun NutriLogBottomBar(
 ) {
     NavigationBar(
         modifier = modifier.testTag("nutrilog-bottom-bar"),
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 0.dp,
     ) {
         NutriLogDestination.entries.forEach { destination ->
@@ -69,8 +72,8 @@ public fun NutriLogBottomBar(
                 alwaysShowLabel = true,
                 colors =
                     NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.onSurface,
                         unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         indicatorColor = MaterialTheme.colorScheme.primaryContainer,
@@ -84,17 +87,17 @@ public fun NutriLogBottomBar(
 /** Maps a destination to its selected (filled) Material icon. */
 private fun NutriLogDestination.selectedIcon(): ImageVector =
     when (this) {
-        NutriLogDestination.SEARCH -> Icons.Filled.Search
-        NutriLogDestination.SAVED -> Icons.AutoMirrored.Filled.List
-        NutriLogDestination.DIARY -> Icons.Filled.DateRange
+        NutriLogDestination.TODAY -> Icons.Filled.DateRange
+        NutriLogDestination.LIBRARY -> Icons.AutoMirrored.Filled.List
+        NutriLogDestination.MORE -> Icons.Filled.MoreVert
     }
 
 /** Maps a destination to its unselected (outlined) Material icon. */
 private fun NutriLogDestination.unselectedIcon(): ImageVector =
     when (this) {
-        NutriLogDestination.SEARCH -> Icons.Outlined.Search
-        NutriLogDestination.SAVED -> Icons.AutoMirrored.Outlined.List
-        NutriLogDestination.DIARY -> Icons.Outlined.DateRange
+        NutriLogDestination.TODAY -> Icons.Outlined.DateRange
+        NutriLogDestination.LIBRARY -> Icons.AutoMirrored.Outlined.List
+        NutriLogDestination.MORE -> Icons.Outlined.MoreVert
     }
 
 /** Material's minimum interactive size, re-stated so it is not a magic number. */

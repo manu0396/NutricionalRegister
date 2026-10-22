@@ -14,6 +14,7 @@ kotlin {
             xcf.add(this)
             export(project(":core:data"))
             export(project(":core:domain"))
+            export(project(":feature:assistant"))
             export(project(":feature:diary"))
             export(project(":feature:savedproducts"))
             export(project(":feature:scan"))
@@ -26,6 +27,7 @@ kotlin {
     sourceSets.commonMain.dependencies {
         api(project(":core:data"))
         api(project(":core:domain"))
+        api(project(":feature:assistant"))
         api(project(":feature:diary"))
         api(project(":feature:savedproducts"))
         api(project(":feature:scan"))

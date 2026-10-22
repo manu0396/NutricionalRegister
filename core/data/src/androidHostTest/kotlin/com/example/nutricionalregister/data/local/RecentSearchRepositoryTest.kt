@@ -45,7 +45,7 @@ class RecentSearchRepositoryTest {
             } finally {
                 firstDatabase.close()
                 file.delete()
-                FileCleanup.deleteSqliteSidecars(file)
+                SqliteFileCleanup.delete(file)
             }
         }
 
@@ -76,12 +76,4 @@ class RecentSearchRepositoryTest {
                 assertTrue(history.observeRecentSearches().first().none { it.normalizedTerm == term.normalizedTerm })
             }
         }
-}
-
-private object FileCleanup {
-    fun deleteSqliteSidecars(file: java.io.File) {
-        java.io.File("${file.path}-journal").delete()
-        java.io.File("${file.path}-shm").delete()
-        java.io.File("${file.path}-wal").delete()
-    }
 }

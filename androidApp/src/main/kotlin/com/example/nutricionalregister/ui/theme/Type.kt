@@ -11,18 +11,48 @@ import androidx.compose.ui.unit.sp
 /**
  * NutriLog type scale.
  *
- * Refines the Material 3 defaults with a firmer weight on titles/headlines so the
- * product name and section headers read clearly, while body copy keeps the
- * stock metrics for comfortable reading. No custom font is bundled.
+ * Every Material 3 slot is defined, so no screen can accidentally fall back to
+ * the stock value and break the hierarchy. Headings and titles carry a firm
+ * weight, body copy stays regular for comfortable reading, and the label slots
+ * are tightened and tracked slightly so they read as metadata rather than as
+ * body text.
+ *
+ * The numeric slots (headline and display) are the ones the daily summary and
+ * the macro values use, so they are the ones with the strongest weight contrast
+ * against the body copy.
  */
 internal val NutriLogTypography: Typography =
     Typography(
+        displayLarge =
+            TextStyle(
+                fontFamily = FontFamily.Default,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 54.sp,
+                lineHeight = 60.sp,
+                letterSpacing = (-0.5).sp,
+            ),
+        displayMedium =
+            TextStyle(
+                fontFamily = FontFamily.Default,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 44.sp,
+                lineHeight = 50.sp,
+                letterSpacing = (-0.25).sp,
+            ),
+        displaySmall =
+            TextStyle(
+                fontFamily = FontFamily.Default,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 34.sp,
+                lineHeight = 40.sp,
+                letterSpacing = 0.sp,
+            ),
         headlineLarge =
             TextStyle(
                 fontFamily = FontFamily.Default,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 30.sp,
-                lineHeight = 38.sp,
+                lineHeight = 36.sp,
                 letterSpacing = 0.sp,
             ),
         headlineMedium =
@@ -30,7 +60,7 @@ internal val NutriLogTypography: Typography =
                 fontFamily = FontFamily.Default,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 26.sp,
-                lineHeight = 34.sp,
+                lineHeight = 32.sp,
                 letterSpacing = 0.sp,
             ),
         headlineSmall =
@@ -38,7 +68,7 @@ internal val NutriLogTypography: Typography =
                 fontFamily = FontFamily.Default,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 22.sp,
-                lineHeight = 30.sp,
+                lineHeight = 28.sp,
                 letterSpacing = 0.sp,
             ),
         titleLarge =
@@ -46,7 +76,7 @@ internal val NutriLogTypography: Typography =
                 fontFamily = FontFamily.Default,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 20.sp,
-                lineHeight = 28.sp,
+                lineHeight = 26.sp,
                 letterSpacing = 0.sp,
             ),
         titleMedium =
@@ -54,8 +84,8 @@ internal val NutriLogTypography: Typography =
                 fontFamily = FontFamily.Default,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 16.sp,
-                lineHeight = 24.sp,
-                letterSpacing = 0.15.sp,
+                lineHeight = 22.sp,
+                letterSpacing = 0.1.sp,
             ),
         titleSmall =
             TextStyle(
@@ -71,7 +101,7 @@ internal val NutriLogTypography: Typography =
                 fontWeight = FontWeight.Normal,
                 fontSize = 16.sp,
                 lineHeight = 24.sp,
-                letterSpacing = 0.5.sp,
+                letterSpacing = 0.15.sp,
             ),
         bodyMedium =
             TextStyle(
@@ -79,7 +109,7 @@ internal val NutriLogTypography: Typography =
                 fontWeight = FontWeight.Normal,
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
-                letterSpacing = 0.25.sp,
+                letterSpacing = 0.2.sp,
             ),
         bodySmall =
             TextStyle(
@@ -87,7 +117,7 @@ internal val NutriLogTypography: Typography =
                 fontWeight = FontWeight.Normal,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
-                letterSpacing = 0.4.sp,
+                letterSpacing = 0.3.sp,
             ),
         labelLarge =
             TextStyle(
@@ -96,5 +126,21 @@ internal val NutriLogTypography: Typography =
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
                 letterSpacing = 0.1.sp,
+            ),
+        labelMedium =
+            TextStyle(
+                fontFamily = FontFamily.Default,
+                fontWeight = FontWeight.Medium,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                letterSpacing = 0.5.sp,
+            ),
+        labelSmall =
+            TextStyle(
+                fontFamily = FontFamily.Default,
+                fontWeight = FontWeight.Medium,
+                fontSize = 11.sp,
+                lineHeight = 16.sp,
+                letterSpacing = 0.5.sp,
             ),
     )

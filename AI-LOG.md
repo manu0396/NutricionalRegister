@@ -462,3 +462,146 @@ do not infer successful verification from generated files alone.
   accounts/testers, and `.storekit` configuration are absent, so a live charge is
   not exercised; recorded in `specs/004-saved-products-navbar/plan.md` (the
   purchase path is built and unit/instrumented/simulator verified against fakes).
+
+### App restructure to the Tracker Shell (spec 007)
+
+- **Scope**: restructure the prototype (a search box and a saved list) into a
+  nutrition tracker: the Tracker Shell with Today, Library and More and a
+  floating action button, the diary as the home, the add-food flow as a
+  two-step route with a barcode source, the product detail as a route, the
+  Coach as a remote-LLM assistant behind a first-party gateway, a single
+  premium unlock, and a full re-skin.
+- **AI assistance**: multi-agent implementation (a diarised wave of subagents
+  under one orchestrator) over the Spec Kit flow of specification 007.
+- **Review**: Pending maintainer review.
+- **Navigation defects reported and their root causes**:
+  1. The bottom bar went blank inside a child screen: the bar's visibility came
+     from a lookup of the current route in an enum that answers null for a
+     nested route, and the rule treated "null" as "hide".
+  2. A product detail resurrected after a switch of destination: the detail was
+     shared view-model state, and the destination switch saved and restored it.
+  3. The back label lied: the detail was the same composable for every
+     destination, so "Back to search" was printed no matter who had opened it.
+  4. `openProductCode` was never wired: the destination model had no route for
+     a product detail, so the affordance existed and did nothing.
+  The fix is one structural decision (ADR-0019): the detail is a route, the
+  step of the add-food flow is a route, the bar is derived from the route
+  hierarchy read from the deepest side, and a switch pops to the destination
+  root without saving or restoring state.
+- **Rejected directions**: an IA of one bottom tab per screen top-level
+  destination (a search tab) was rejected because a catalogue is an input to
+  the diary and not a peer of it; a rule-based insight engine beside the
+  Assistant was rejected because a deterministic heuristic cannot honestly
+  answer "what should I eat" and the gateway is a first-party service.
+- **Purchase re-point**: the per-food purchase was removed everywhere
+  (FR-032); the app sells exactly one premium product, `nutrilog_pro`, which
+  unlocks the Coach, offered only in More (ADR-0018).
+- **Assistant deployment prerequisite**: the Coach is unusable until the
+  publisher deploys the AI gateway and sets the `NUTRILOG_AI_PROXY_URL` Gradle
+  property; by design the build without it shows an explicit "not configured"
+  state instead of an input field that cannot work (ADR-0016, FR-025).
+- **Commands run**: `./gradlew :core:domain:testAndroidHostTest
+  :core:domain:koverVerify :core:domain:ktlintCheck`,
+  `:core:data:testAndroidHostTest :core:data:koverVerify
+  :core:data:ktlintCheck :core:data:verifySqlDelightMigration`,
+  `:feature:assistant:testAndroidHostTest`, `:feature:scan:testAndroidHostTest`,
+  `:feature:diary:testAndroidHostTest`, `:androidApp:assembleDebug`,
+  `:androidApp:compileDebugAndroidTestKotlin`, `:androidApp:ktlintCheck`,
+  `:shared:testAndroidHostTest`, `:architectureTest`, `:coverageVerify`,
+  `:kotlinLint`, `:plainTextCheck`.
+- **Results**: all of the above `BUILD SUCCESSFUL`; the schema migration chain
+  verifies from v1 on a fresh checkout; the Konsist architecture test now
+  matches the real package roots and fails when it inspects no file.
+
+### Making the assistant work (spec 007, follow-up)
+
+- **Scope**: the review asked for images in the search, a quieter top bar, and
+  a Coach that is reachable from the whole app and actually works. The reach
+  and the images were app changes; "works" required the service the app talks
+  to, which did not exist anywhere, so it is now the repository's
+  `gateway/`, with its own ADR-0020.
+- **What changed in the app**: the add-food flow's search results and Library
+  rows render the food's thumbnail (verified by screenshot colour count), the
+  flow's top title is gone, the shell carries an assistant action beside the
+  add-food action on every destination (and inside their child routes), a
+  debuggable build treats the premium as unlocked so the Coach can be
+  exercised before a store purchase exists, choosing a food in the flow opens
+  its detail route (where it can be kept for the next time), a proposal with
+  nothing to confirm is no longer rendered, and the proposal card shows what
+  the assistant said. The executor now resolves a proposal's food from the
+  saved record when the catalogue cache does not have it, because a Coach
+  unable to log the food it was given is a dead end (FR-024).
+- **Commands run**: `:core:domain:testAndroidHostTest :core:domain:koverVerify
+  :core:domain:ktlintCheck`, `:androidApp:assembleDebug`,
+  `:androidApp:ktlintCheck`, and the live pass on an emulator (install, launch,
+  search, save, open the Coach, consent, ask, apply, verify the day).
+- **Results**: the assistant answered through the gateway, proposed a log of
+  the food the user keeps, the user confirmed it and the day's totals went from
+  0 kcal to 67 kcal / 4.2 g protein as computed from the product's nutrition.
+  The service's health, its rejection of a malformed body and an empty
+  conversation, and its route guard were checked with curl over HTTPS.
+- **Failures/corrections during the work**: the emulated emulator's IME covered
+  the composer, so the send control was unreachable by a naive tap; the flow
+  was completed after dismissing the keyboard. The Anthropic key available in
+  the environment has no credit balance, so the answer came from the
+  gateway's deterministic fallback rather than the model; with a funded key
+  the same container answers with the model and no app changes.
+- **Production prerequisites not satisfied**: device attestation and the
+  enforced server-side entitlement (ADR-0020's recorded pending work), and a
+  funded provider key, which only the publisher can supply.
+
+
+### The Coach answers the question that was asked (spec 007, follow-up)
+
+- **Scope**: the review said the coach always replied the same sentence. The
+  gateway had fallen back to its deterministic coach, because the only key in
+  the environment carries no credit.
+- **What changed**: the gateway now speaks the OpenAI-compatible chat format as
+  well, so the coach answers with whatever the environment points it at (a
+  hosted provider, a self-hosted Ollama, a local LM Studio), and
+  `gateway/start-dev.sh` prefers a local engine that answers and names the
+  model it serves, so a developer's build answers with a model without
+  carrying a key. The system prompt is rewritten so the prose is asked for
+  first and the actions last, which stops a small model answering in actions
+  alone. The gateway now also computes the day's sums itself and hands them to
+  the model, so a small model phrases numbers instead of doing arithmetic.
+  `llama3.2:3b` was pulled on this machine for the harness.
+- **Commands run**: `node --check` on the gateway's sources; three questions
+  and one off-domain question through `curl` over HTTPS against the app's own
+  contract; the app's flow on the emulator.
+- **Results**: four different answers, each to the question that was asked:
+  the calories left (computed by the gateway), the food logged so far, the
+  protein advice against the goal, and an honest "I don't have information
+  about the weather" for something that is not the coach's subject. A request
+  to log 200 g proposed the correct log action.
+- **Failures/corrections during the work**: the local engine's model name is
+  the engine's, so the harness was corrected to name the model it serves;
+  the deterministic fallback stays the answer of last resort.
+
+
+### The coach plans a day from the user's library (spec 007, follow-up)
+
+- **Scope**: the review asked for a coach that can complete all the meals to
+  reach the day's calories goal just by being asked. That needs what a food
+  contains, which the context did not carry: a plan could only name codes.
+- **What changed**: the shared `AssistantContext` now carries the library as
+  foods with their nutrition per 100 g (`AssistantLibraryFood`), so the AI
+  service can reason about what a food would contribute. The executor owns
+  `libraryFoods()`, which reads the saved record and the catalogue's copy and
+  turns a food into its per-100 g amounts, whether the catalogue declared them
+  per 100 g or per serving. The wire's context carries the library and its
+  nutrients, with a value the catalogue does not report omitted. The gateway
+  gained a planner: the plan of the rest of the day is computed there, in
+  grams, one portion per meal that has no entries, split evenly over what
+  remains and topped up where a portion's largest sensible size binds, so the
+  day provably ends at the goal (verified: 2000 -> 2006 kcal) when the
+  library's foods can carry it, and the answer says plainly what is still
+  missing when it cannot. The model writes the words for the plan the gateway
+  computed; a plan is never re-derived by the model. When the model answers
+  only in actions, the gateway keeps the words for its own plan.
+- **Commands run**: the full host gates (tests, coverage gate, ktlint,
+  architecture, plain text); the three-question proof through `curl` over
+  HTTPS; the instrumented suite (15 tests on the emulator).
+- **Results**: all gates green; the plan's log actions were proposed for
+  LUNCH, DINNER and SNACKS from the library and the day would end at about
+  2006 kcal of the 2000 goal.

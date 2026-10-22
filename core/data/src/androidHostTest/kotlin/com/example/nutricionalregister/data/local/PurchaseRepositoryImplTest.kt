@@ -171,11 +171,3 @@ private class FakePurchaseClient(
 
     override suspend fun currentEntitlements(): List<VerifiedTransaction> = entitlements
 }
-
-private object SqliteFileCleanup {
-    fun delete(file: java.io.File) {
-        java.io.File("${file.path}-journal").delete()
-        java.io.File("${file.path}-shm").delete()
-        java.io.File("${file.path}-wal").delete()
-    }
-}

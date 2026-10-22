@@ -2,6 +2,8 @@ package com.example.nutricionalregister.data
 
 import android.content.Context
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.example.nutricionalregister.data.assistant.AiGatewayClient
+import com.example.nutricionalregister.data.assistant.AssistantClientImpl
 import com.example.nutricionalregister.domain.product.EpochClock
 import com.example.nutricionalregister.domain.purchase.PurchaseClient
 import io.ktor.client.HttpClient
@@ -29,11 +31,13 @@ public fun createProductSearchRuntime(
     context: Context,
     clock: EpochClock,
     purchaseClient: PurchaseClient,
+    aiGatewayBaseUrl: String = "",
     databaseDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ): ProductSearchRuntime {
     val httpClient = createProductHttpClient()
     val databaseDriver = createProductDatabaseDriver(context)
     val database = ProductDatabase(databaseDriver)
+    val dayBoundaryProvider = SystemDayBoundaryProvider()
     return ProductSearchRuntime(
         productSearchRepository =
             ProductSearchRepositoryImpl(
@@ -62,6 +66,20 @@ public fun createProductSearchRuntime(
                 client = purchaseClient,
                 databaseDispatcher = databaseDispatcher,
             ),
+        diaryRepository =
+            DiaryRepositoryImpl(
+                database = database,
+                dayBoundaryProvider = dayBoundaryProvider,
+                databaseDispatcher = databaseDispatcher,
+            ),
+        nutritionGoalRepository =
+            NutritionGoalRepositoryImpl(
+                database = database,
+                databaseDispatcher = databaseDispatcher,
+            ),
+        dayBoundaryProvider = dayBoundaryProvider,
+        assistantClient = AssistantClientImpl(AiGatewayClient(httpClient, aiGatewayBaseUrl)),
+        isAssistantConfigured = aiGatewayBaseUrl.isNotBlank(),
         closeResources = {
             httpClient.close()
             databaseDriver.close()

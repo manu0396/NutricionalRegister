@@ -1,0 +1,93 @@
+CREATE TABLE DiaryEntry (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    product_code TEXT NOT NULL,
+    product_name TEXT NOT NULL,
+    brands TEXT,
+    image_thumbnail_url TEXT,
+    meal_type TEXT NOT NULL,
+    quantity_grams REAL NOT NULL,
+    unit TEXT NOT NULL DEFAULT 'g',
+    energy_kcal REAL,
+    protein_grams REAL,
+    carbohydrate_grams REAL,
+    fat_grams REAL,
+    logged_at_epoch_millis INTEGER NOT NULL,
+    day_epoch_millis INTEGER NOT NULL
+);
+
+CREATE INDEX diary_entry_day_index ON DiaryEntry(day_epoch_millis);
+
+CREATE TABLE NutritionGoal (
+    singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
+    energy_kcal INTEGER NOT NULL,
+    protein_grams INTEGER NOT NULL,
+    carbohydrate_grams INTEGER NOT NULL,
+    fat_grams INTEGER NOT NULL
+);
+
+insertDiaryEntry:
+INSERT INTO DiaryEntry (
+    product_code,
+    product_name,
+    brands,
+    image_thumbnail_url,
+    meal_type,
+    quantity_grams,
+    unit,
+    energy_kcal,
+    protein_grams,
+    carbohydrate_grams,
+    fat_grams,
+    logged_at_epoch_millis,
+    day_epoch_millis
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectLastInsertedDiaryEntryId:
+SELECT last_insert_rowid();
+
+selectDiaryEntriesForDay:
+SELECT *
+FROM DiaryEntry
+WHERE day_epoch_millis = ?
+ORDER BY logged_at_epoch_millis ASC, id ASC;
+
+selectDiaryEntriesBetweenDays:
+SELECT *
+FROM DiaryEntry
+WHERE day_epoch_millis >= ? AND day_epoch_millis <= ?
+ORDER BY day_epoch_millis ASC, logged_at_epoch_millis ASC, id ASC;
+
+updateDiaryEntry:
+UPDATE DiaryEntry
+SET
+    product_code = ?,
+    product_name = ?,
+    brands = ?,
+    image_thumbnail_url = ?,
+    meal_type = ?,
+    quantity_grams = ?,
+    unit = ?,
+    energy_kcal = ?,
+    protein_grams = ?,
+    carbohydrate_grams = ?,
+    fat_grams = ?,
+    logged_at_epoch_millis = ?,
+    day_epoch_millis = ?
+WHERE id = ?;
+
+deleteDiaryEntry:
+DELETE FROM DiaryEntry WHERE id = ?;
+
+upsertNutritionGoal:
+INSERT OR REPLACE INTO NutritionGoal (
+    singleton,
+    energy_kcal,
+    protein_grams,
+    carbohydrate_grams,
+    fat_grams
+) VALUES (1, ?, ?, ?, ?);
+
+selectNutritionGoal:
+SELECT *
+FROM NutritionGoal
+WHERE singleton = 1;

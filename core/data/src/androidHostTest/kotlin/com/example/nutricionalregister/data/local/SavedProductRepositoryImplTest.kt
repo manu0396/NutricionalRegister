@@ -39,7 +39,7 @@ class SavedProductRepositoryImplTest {
             } finally {
                 firstDatabase.close()
                 file.delete()
-                SqliteSidecars.delete(file)
+                SqliteFileCleanup.delete(file)
             }
         }
 
@@ -63,12 +63,4 @@ class SavedProductRepositoryImplTest {
                 assertFalse(saved.isSaved("0001").first())
             }
         }
-}
-
-private object SqliteSidecars {
-    fun delete(file: java.io.File) {
-        java.io.File("${file.path}-journal").delete()
-        java.io.File("${file.path}-shm").delete()
-        java.io.File("${file.path}-wal").delete()
-    }
 }

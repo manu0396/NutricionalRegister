@@ -25,6 +25,24 @@ public data class SavedProduct(
         require(name.isNotBlank()) { "Saved product name must not be blank" }
     }
 
+    /**
+     * The catalogue product this saved entry stands for.
+     *
+     * A saved product keeps only the display fields, so the product rebuilt from
+     * it carries no nutrition values. It is the fallback used when the catalogue
+     * copy is not on the device: the food can still be logged, and the nutrients
+     * it does not report are recorded as unknown rather than as zero.
+     */
+    public fun toProduct(): Product =
+        Product(
+            code = code,
+            name = name,
+            brands = brands,
+            quantity = quantity,
+            nutriScoreGrade = nutriScoreGrade,
+            imageThumbnailUrl = imageThumbnailUrl,
+        )
+
     public companion object {
         /** Copies the display fields of [product] into a saved entry (data-model.md). */
         public fun fromProduct(
