@@ -82,6 +82,18 @@ public data class NutritionTotals(
                 carbohydrateGrams != null &&
                 fatGrams != null
 
+    /** The value of [nutrient], or null when it is unknown. */
+    public fun valueOf(nutrient: Nutrient): Double? =
+        when (nutrient) {
+            Nutrient.ENERGY -> energyKcal
+            Nutrient.PROTEIN -> proteinGrams
+            Nutrient.CARBOHYDRATE -> carbohydrateGrams
+            Nutrient.FAT -> fatGrams
+        }
+
+    /** Whether [nutrient] is only partially known, so its value is a lower bound. */
+    public fun isLowerBound(nutrient: Nutrient): Boolean = nutrient in incomplete
+
     public companion object {
         /** A total in which nothing has been counted: every component is a known zero. */
         public val ZERO: NutritionTotals = NutritionTotals(0.0, 0.0, 0.0, 0.0)
