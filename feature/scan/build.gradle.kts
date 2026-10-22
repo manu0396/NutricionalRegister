@@ -4,6 +4,11 @@ plugins {
 
 kotlin {
     sourceSets.commonMain.dependencies {
-        implementation(project(":core:domain"))
+        api(project(":core:domain"))
+        implementation(libs.coroutines.core)
+    }
+
+    sourceSets.commonTest.dependencies {
+        implementation(libs.coroutines.test)
     }
 }
