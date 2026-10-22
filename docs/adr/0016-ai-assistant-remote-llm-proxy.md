@@ -1,6 +1,6 @@
 # ADR-0016: Remote LLM Assistant Behind a First-Party AI Proxy
 
-- **Status**: Proposed
+- **Status**: Accepted (implemented by specification 007)
 - **Date**: 2026-10-21
 - **Decision owners**: Project maintainers
 - **Related tasks/specifications**: `specs/007-app-restructure/`; [spec.md](../../specs/007-app-restructure/spec.md); ADR-0005

@@ -1,6 +1,6 @@
 # ADR-0017: CameraX and Bundled ML Kit Barcode Scanning for the Android Scanner
 
-- **Status**: Proposed
+- **Status**: Accepted (implemented by specification 007)
 - **Date**: 2026-10-21
 - **Decision owners**: Project maintainers
 - **Related tasks/specifications**: `specs/007-app-restructure/` (spec.md, plan.md, tasks.md — the scanner tasks are to be numbered in the same change set); ADR-0011, ADR-0013, ADR-0014, ADR-0015

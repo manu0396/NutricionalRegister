@@ -1,6 +1,6 @@
 # ADR-0018: Single Premium Product for the In-App Purchase
 
-- **Status**: Proposed
+- **Status**: Accepted (implemented by specification 007)
 - **Date**: 2026-10-21
 - **Decision owners**: Project maintainers
 - **Related tasks/specifications**: `specs/007-app-restructure/`; [spec.md](../../specs/007-app-restructure/spec.md); ADR-0013; ADR-0014; ADR-0016
