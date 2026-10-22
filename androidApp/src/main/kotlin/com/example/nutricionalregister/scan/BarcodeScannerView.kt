@@ -10,7 +10,6 @@ import androidx.annotation.OptIn
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -40,8 +39,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.nutricionalregister.ui.theme.NutriLogSpacing
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
 
 /**
@@ -61,11 +58,14 @@ import java.util.concurrent.Executors
  *
  * @param onBarcodeDetected invoked once with the code the camera read, or with
  *   the code the user typed by hand.
+ * @param decoder the seam between the camera pipeline and the decoder, so an
+ *   instrumented test never needs a camera or a real barcode (ADR-0017).
  * @param modifier the modifier applied to the view.
  */
 @Composable
 public fun BarcodeScannerView(
     onBarcodeDetected: (String) -> Unit,
+    decoder: BarcodeDecoder = MlKitBarcodeDecoder(),
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -118,6 +118,7 @@ public fun BarcodeScannerView(
                     CameraPreview(
                         onBarcodeDetected = onBarcodeDetected,
                         onUnavailable = { cameraUnavailable = true },
+                        decoder = decoder,
                         modifier = Modifier.fillMaxWidth().height(280.dp),
                     )
                     Text(
@@ -151,19 +152,18 @@ public fun BarcodeScannerView(
 private fun CameraPreview(
     onBarcodeDetected: (String) -> Unit,
     onUnavailable: () -> Unit,
+    decoder: BarcodeDecoder,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val executor = remember { Executors.newSingleThreadExecutor() }
-    val scanner = remember { BarcodeScanning.getClient() }
     var provider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var reported by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         onDispose {
             provider?.unbindAll()
-            scanner.close()
             executor.shutdown()
         }
     }
@@ -186,14 +186,18 @@ private fun CameraPreview(
                                     .Builder()
                                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                                     .build()
-                            analysis.setAnalyzer(executor) { proxy ->
-                                readBarcode(scanner, proxy) { code ->
-                                    if (!reported) {
-                                        reported = true
-                                        onBarcodeDetected(code)
-                                    }
-                                }
-                            }
+                            analysis.setAnalyzer(
+                                executor,
+                                BarcodeImageAnalyzer(
+                                    decoder = decoder,
+                                    onBarcode = { code ->
+                                        if (!reported) {
+                                            reported = true
+                                            onBarcodeDetected(code)
+                                        }
+                                    },
+                                ),
+                            )
 
                             cameraProvider.unbindAll()
                             cameraProvider.bindToLifecycle(
@@ -212,36 +216,6 @@ private fun CameraPreview(
         },
         modifier = modifier,
     )
-}
-
-/**
- * Reads the first barcode of [proxy] and reports it through [onRead].
- *
- * The analyser runs off the main thread, and the proxy is always closed, so the
- * camera never stalls behind a frame that was not released.
- */
-@OptIn(ExperimentalGetImage::class)
-private fun readBarcode(
-    scanner: com.google.mlkit.vision.barcode.BarcodeScanner,
-    proxy: ImageProxy,
-    onRead: (String) -> Unit,
-) {
-    val mediaImage = proxy.image
-    if (mediaImage == null) {
-        proxy.close()
-        return
-    }
-    val rotation = proxy.imageInfo.rotationDegrees
-    val input = InputImage.fromMediaImage(mediaImage, rotation)
-
-    scanner
-        .process(input)
-        .addOnSuccessListener { barcodes ->
-            barcodes
-                .mapNotNull { barcode -> barcode.rawValue?.trim() }
-                .firstOrNull { code -> code.isNotEmpty() }
-                ?.let(onRead)
-        }.addOnCompleteListener { proxy.close() }
 }
 
 /** The fallback: the code typed by hand, which goes through the same callback. */
