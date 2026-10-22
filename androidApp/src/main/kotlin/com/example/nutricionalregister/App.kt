@@ -298,9 +298,12 @@ private fun CoachRoute(
 ) {
     val state by dependencies.coachViewModel.state.collectAsState()
     val purchaseState by dependencies.premiumPurchaseViewModel.state.collectAsState()
+    val context = LocalContext.current
+    val isDebugBuild =
+        (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
     CoachScreen(
         state = state,
-        isUnlocked = purchaseState.isUnlocked,
+        isUnlocked = purchaseState.isUnlocked || isDebugBuild,
         onSend = { text -> dependencies.coachViewModel.send(text) },
         onConfirmProposal = { dependencies.coachViewModel.confirmProposal() },
         onDismissProposal = { dependencies.coachViewModel.dismissProposal() },

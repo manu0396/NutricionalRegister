@@ -135,11 +135,32 @@ disables the assistant with an explicit message rather than breaking it. To poin
 the app at a gateway, set the property in `local.properties`:
 
 ```properties
-nutrilog.ai.proxyUrl=https://your-gateway.example.com
+NUTRILOG_AI_PROXY_URL=https://your-gateway.example.com
 ```
 
 The provider key is never part of the app and never part of this repository. The
 gateway contract is specified in ADR-0016.
+
+## Running the app
+
+The Coach is the assistant screen and it is reachable from the whole app: the
+shell keeps a small assistant action next to the add-food action on every
+destination and inside its child routes, and it is hidden only while the Coach
+itself is on the screen.
+
+A build without the gateway address has no Coach, and the screen says so. To
+turn the assistant on, the publisher deploys the gateway and passes its
+address as a Gradle property, which becomes a generated string resource the
+app reads at start-up:
+
+```
+./gradlew :androidApp:assembleDebug -PNUTRILOG_AI_PROXY_URL=https://gateway.example.com
+adb install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk
+```
+
+A debuggable build treats the premium as unlocked, so the Coach can be
+exercised before a purchase exists; a release build ignores it and gates the
+Coach on the store entitlement.
 
 ## Where the code is
 
