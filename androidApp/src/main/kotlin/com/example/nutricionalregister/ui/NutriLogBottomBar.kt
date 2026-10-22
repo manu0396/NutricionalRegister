@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName", "ktlint:standard:function-naming")
+
 package com.example.nutricionalregister.ui
 
 import androidx.compose.material.icons.Icons

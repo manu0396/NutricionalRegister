@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName", "ktlint:standard:function-naming")
+
 package com.example.nutricionalregister
 
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.navigation.NamedNavArgument
 import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -129,7 +132,7 @@ public fun AppShell(
                 ) { entry ->
                     addFoodContent(
                         contentPadding,
-                        entry.addFoodDestination(AddFoodStep.SOURCE),
+                        entry.addFoodDestination(navController, AddFoodStep.SOURCE),
                         navigator,
                     )
                 }
@@ -139,7 +142,7 @@ public fun AppShell(
                 ) { entry ->
                     addFoodContent(
                         contentPadding,
-                        entry.addFoodDestination(AddFoodStep.QUANTITY),
+                        entry.addFoodDestination(navController, AddFoodStep.QUANTITY),
                         navigator,
                     )
                 }
@@ -198,25 +201,30 @@ private fun NavBackStackEntry?.currentTopLevelDestination(): NutriLogDestination
             NutriLogDestination.fromRoute(destination.route)
         }
 
-/**
- * The value of the add-food argument [name] for this entry.
- *
- * The value is read from the entry itself and, when it is empty, from the
- * graph that holds the entry, because the arguments of a nested graph are the
- * ones that carry the preselection of the flow.
- */
-private fun NavBackStackEntry.addFoodArgument(name: String): String? =
-    argument(name).ifBlank { null } ?: parent?.argument(name)?.ifBlank { null }
-
 /** The value of the argument [name] for this entry, or an empty string. */
-private fun NavBackStackEntry.argument(name: String): String =
-    arguments?.getString(name).orEmpty()
+private fun NavBackStackEntry.argument(name: String): String = arguments?.getString(name).orEmpty()
+
+/**
+ * The id of the add-food graph's entry, which identifies one opening of the flow.
+ *
+ * A new open pushes a new graph entry, so the id changes and the flow is reset;
+ * moving between the two steps of one open keeps the same graph entry, so the id
+ * is the same and the choice is kept. The graph entry is always on the stack
+ * while one of its steps is composed; the fallback exists so a hook that reads
+ * the destination outside that window degrades to an unusable session id instead
+ * of throwing.
+ */
+private fun NavHostController.addFoodSessionId(): String? =
+    runCatching { getBackStackEntry(NutriLogRoutes.ADD_FOOD_GRAPH).id.toString() }.getOrNull()
 
 /** The add-food destination this entry describes. */
-private fun NavBackStackEntry.addFoodDestination(step: AddFoodStep): AddFoodDestination =
+private fun NavBackStackEntry.addFoodDestination(
+    navController: NavHostController,
+    step: AddFoodStep,
+): AddFoodDestination =
     AddFoodDestination(
-        sessionId = parent?.id?.toString() ?: id.toString(),
+        sessionId = navController.addFoodSessionId().orEmpty(),
         step = step,
-        meal = addFoodArgument(NutriLogRoutes.ARG_MEAL),
-        productCode = addFoodArgument(NutriLogRoutes.ARG_PRODUCT),
+        meal = argument(NutriLogRoutes.ARG_MEAL).takeIf { it.isNotBlank() },
+        productCode = argument(NutriLogRoutes.ARG_PRODUCT).takeIf { it.isNotBlank() },
     )
