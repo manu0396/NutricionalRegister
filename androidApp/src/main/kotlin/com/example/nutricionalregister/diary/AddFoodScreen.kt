@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -30,8 +31,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -46,6 +45,7 @@ import com.example.nutricionalregister.domain.purchase.SavedProduct
 import com.example.nutricionalregister.feature.diary.AddFoodSource
 import com.example.nutricionalregister.feature.diary.AddFoodState
 import com.example.nutricionalregister.scan.BarcodeScannerView
+import com.example.nutricionalregister.search.ProductImage
 import com.example.nutricionalregister.ui.MinimumTouchTarget
 import com.example.nutricionalregister.ui.components.NutriLogEmptyState
 import com.example.nutricionalregister.ui.components.NutriLogListItem
@@ -109,30 +109,16 @@ public fun AddFoodScreen(
     Column(
         modifier = modifier.fillMaxSize().padding(contentPadding),
     ) {
-        TopAppBar(
-            title = {
-                Text(
-                    text = if (step == AddFoodStep.QUANTITY) "How much" else "Add food",
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            },
-            navigationIcon = {
-                FilledTonalIconButton(
-                    onClick = onBack,
-                    modifier =
-                        Modifier
-                            .sizeIn(minWidth = MinimumTouchTarget, minHeight = MinimumTouchTarget)
-                            .testTag("add-food-back"),
-                ) {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
-            },
-            colors =
-                TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-        )
+        FilledTonalIconButton(
+            onClick = onBack,
+            modifier =
+                Modifier
+                    .padding(NutriLogSpacing.large)
+                    .sizeIn(minWidth = MinimumTouchTarget, minHeight = MinimumTouchTarget)
+                    .testTag("add-food-back"),
+        ) {
+            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+        }
 
         if (step == AddFoodStep.QUANTITY) {
             QuantityStep(
@@ -310,6 +296,15 @@ private fun SearchPanel(
                     NutriLogListItem(
                         title = product.name,
                         subtitle = product.subtitle(),
+                        leading = {
+                            ProductImage(
+                                url = product.imageThumbnailUrl ?: product.imageUrl,
+                                contentDescription = null,
+                                initial = product.name.firstOrNull { it.isLetterOrDigit() },
+                                seed = product.code,
+                                modifier = Modifier.imageSize(),
+                            )
+                        },
                         onClick = { onProductSelected(product) },
                         trailing = {
                             Icon(
@@ -349,6 +344,15 @@ private fun LibraryPanel(
                     NutriLogListItem(
                         title = food.name,
                         subtitle = listOfNotNull(food.brands, food.quantity).joinToString(" · "),
+                        leading = {
+                            ProductImage(
+                                url = food.imageThumbnailUrl,
+                                contentDescription = null,
+                                initial = food.name.firstOrNull { it.isLetterOrDigit() },
+                                seed = food.code,
+                                modifier = Modifier.imageSize(),
+                            )
+                        },
                         onClick = { onProductSelected(food.toProduct()) },
                         trailing = {
                             Icon(
@@ -524,7 +528,6 @@ private fun MealControl(
             )
             Text(
                 text = mealType?.displayName ?: "No meal chosen",
-                style = MaterialTheme.typography.titleLarge,
                 color =
                     if (mealType == null) {
                         MaterialTheme.colorScheme.onSurfaceVariant
@@ -597,3 +600,6 @@ private fun Double.toPlainString(): String {
 }
 
 private val QUICK_AMOUNTS = listOf(50, 100, 200)
+
+/** The thumbnail size of a row of foods, on the spacing scale of the app. */
+private fun Modifier.imageSize(): Modifier = this.size(width = 48.dp, height = 48.dp)

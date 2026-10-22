@@ -2,17 +2,22 @@
 
 package com.example.nutricionalregister
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.navigation.NamedNavArgument
@@ -32,6 +37,7 @@ import com.example.nutricionalregister.domain.navigation.NutriLogRoutes
 import com.example.nutricionalregister.ui.AddFoodDestination
 import com.example.nutricionalregister.ui.NutriLogBottomBar
 import com.example.nutricionalregister.ui.NutriLogNavigator
+import com.example.nutricionalregister.ui.theme.NutriLogSpacing
 
 /**
  * The app shell: the tracker frame every screen is shown in.
@@ -79,6 +85,7 @@ public fun AppShell(
     val showAddAction =
         currentDestination == NutriLogDestination.TODAY ||
             currentDestination == NutriLogDestination.LIBRARY
+    val currentIsCoach = backStackEntry?.destination?.route == NutriLogRoutes.COACH
 
     Scaffold(
         modifier = modifier,
@@ -92,18 +99,37 @@ public fun AppShell(
             }
         },
         floatingActionButton = {
-            if (showAddAction) {
-                FloatingActionButton(
-                    onClick = { navigator.openAddFood() },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    shape = MaterialTheme.shapes.large,
-                    modifier = Modifier.testTag("nutrilog-add-food-fab"),
+            if (!currentIsCoach) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(NutriLogSpacing.medium),
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = "Add food",
-                    )
+                    if (showAddAction) {
+                        FloatingActionButton(
+                            onClick = { navigator.openAddFood() },
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            shape = MaterialTheme.shapes.large,
+                            modifier = Modifier.testTag("nutrilog-add-food-fab"),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Add,
+                                contentDescription = "Add food",
+                            )
+                        }
+                    }
+                    SmallFloatingActionButton(
+                        onClick = { navigator.openCoach() },
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary,
+                        shape = MaterialTheme.shapes.large,
+                        modifier = Modifier.testTag("nutrilog-coach-fab"),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Face,
+                            contentDescription = "Ask the Coach",
+                        )
+                    }
                 }
             }
         },

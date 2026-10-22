@@ -51,14 +51,14 @@ class NavigationRegressionTest {
         rule.onNodeWithTag("nutrilog-bottom-bar").assertIsDisplayed()
 
         rule.onNodeWithTag("nutrilog-add-food-fab").performClick()
-        rule.onNodeWithText("Add food").assertIsDisplayed()
+        rule.onNodeWithTag("add-food-query").assertIsDisplayed()
         rule.onNodeWithTag("nutrilog-bottom-bar").assertDoesNotExist()
     }
 
     @Test
     fun `leavingAChildRouteReturnsToTheDestinationRootAndTheBarComesBack`() {
         rule.onNodeWithTag("nutrilog-add-food-fab").performClick()
-        rule.onNodeWithText("Add food").assertIsDisplayed()
+        rule.onNodeWithTag("add-food-query").assertIsDisplayed()
         rule.onNodeWithTag("add-food-back").performClick()
 
         rule.onNodeWithTag("nutrilog-bottom-bar").assertIsDisplayed()
