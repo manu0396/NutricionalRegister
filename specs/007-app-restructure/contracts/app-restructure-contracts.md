@@ -7,12 +7,15 @@
 Public contracts introduced or changed by this feature. All of them live in the
 shared KMP modules; the Android UI consumes them and never reimplements them.
 
-## 1. Domain - `core:domain`
+## 1. Domain - `core:domain`, package `domain.diary`
 
 ### 1.1 `MealType`
 
 ```kotlin
-public enum class MealType(public val displayName: String, public val order: Int) {
+public enum class MealType(
+    public val displayName: String,
+    public val order: Int,
+) {
     BREAKFAST("Breakfast", 0),
     LUNCH("Lunch", 1),
     DINNER("Dinner", 2),
@@ -20,6 +23,7 @@ public enum class MealType(public val displayName: String, public val order: Int
     ;
 
     public companion object {
+        public val ordered: List<MealType>
         public fun fromStorage(value: String): MealType
     }
 }
@@ -47,28 +51,19 @@ public data class DiaryEntry(
     val fatGrams: Double? = null,
     val loggedAtEpochMillis: Long = 0,
     val dayEpochMillis: Long = 0,
-)
-```
-
-Validation: `productCode` and `productName` are not blank; `quantityGrams` is
-finite and greater than zero; every nutrient value is finite and not negative
-when it is present.
-
-A nutrient is `null` when the catalogue does not report it. That is a different
-statement from zero, and the UI never turns one into the other.
-
-### 1.3 `Nutrient`
-
-```kotlin
-public enum class Nutrient {
-    ENERGY,
-    PROTEIN,
-    CARBOHYDRATE,
-    FAT,
+) {
+    public val totals: NutritionTotals
 }
 ```
 
-### 1.4 `NutritionTotals`
+Validation: `productCode` and `productName` are not blank; `quantityGrams` is
+finite and greater than zero; every nutrient value is either null or finite and
+not negative.
+
+The entry is a **snapshot**. The name, the brand, the image and the nutrients are
+copied at log time, so a later catalogue change cannot rewrite what the user ate.
+
+### 1.3 `NutritionTotals`
 
 ```kotlin
 public data class NutritionTotals(
@@ -76,7 +71,6 @@ public data class NutritionTotals(
     val proteinGrams: Double? = null,
     val carbohydrateGrams: Double? = null,
     val fatGrams: Double? = null,
-    val incomplete: Set<Nutrient> = emptySet(),
 ) {
     public operator fun plus(other: NutritionTotals): NutritionTotals
     public fun scaledBy(factor: Double): NutritionTotals
@@ -90,28 +84,27 @@ public data class NutritionTotals(
 }
 ```
 
-Contract: `plus` is component-wise and commutative. A component is `null` when
-nothing reports it, and is listed in `incomplete` when only some of the
-contributions report it, so the UI can show a lower bound instead of a
-fabricated number. `scaledBy` multiplies every known component by `factor` and
-keeps the incomplete markers. `remainingAgainst` never returns a negative
-amount and keeps the incomplete markers. `ZERO` is the total of nothing: every
-component is a known zero.
+Contract: `null` means **unknown**, not zero. `0.0` means known to be zero.
+`plus` is component-wise and conservative: as soon as one side is unknown the
+result is unknown. `fromEntries` of an empty list is the known zero; of a
+non-empty list, a nutrient that at least one entry does not report is unknown.
+`remainingAgainst` is never negative and is unknown when the total is unknown.
 
-### 1.5 `NutritionGoal`
+### 1.4 `NutritionGoal`
 
 ```kotlin
 public data class NutritionGoal(
-    val energyKcal: Int = 2000,
-    val proteinGrams: Int = 120,
-    val carbohydrateGrams: Int = 220,
-    val fatGrams: Int = 70,
+    val energyKcal: Int = DEFAULT_ENERGY_KCAL,
+    val proteinGrams: Int = DEFAULT_PROTEIN_GRAMS,
+    val carbohydrateGrams: Int = DEFAULT_CARBOHYDRATE_GRAMS,
+    val fatGrams: Int = DEFAULT_FAT_GRAMS,
 )
 ```
 
-Contract: every target is greater than zero.
+Contract: every target is greater than zero. The defaults are 2000 kcal,
+120 g of protein, 220 g of carbohydrate and 70 g of fat.
 
-### 1.6 `DiaryRepository`
+### 1.5 `DiaryRepository`
 
 ```kotlin
 public interface DiaryRepository {
@@ -124,11 +117,11 @@ public interface DiaryRepository {
 ```
 
 Contract: `observeEntriesForDay` emits the entries of exactly that local day,
-ordered by log time, and re-emits on every change. `observeEntriesForWeek`
-emits the entries of the seven local days that end with the given day.
-`addEntry` returns the new row id. `removeEntry` on an unknown id is a no-op.
+oldest first, and re-emits on every change. `observeEntriesForWeek` emits the
+seven local days that end with that day. `addEntry` returns the new row id.
+`removeEntry` on an unknown id is a no-op. No method performs a network call.
 
-### 1.7 `NutritionGoalRepository`
+### 1.6 `NutritionGoalRepository`
 
 ```kotlin
 public interface NutritionGoalRepository {
@@ -140,7 +133,7 @@ public interface NutritionGoalRepository {
 Contract: `observeGoal` emits the stored goal, or the default goal when nothing
 is stored yet.
 
-### 1.8 `DayBoundaryProvider` and `DiaryDay`
+### 1.7 `DayBoundaryProvider` and `DiaryDay`
 
 ```kotlin
 public interface DayBoundaryProvider {
@@ -149,33 +142,23 @@ public interface DayBoundaryProvider {
 }
 
 public object DiaryDay {
-    public fun lastDays(
-        dayBoundaryProvider: DayBoundaryProvider,
-        todayEpochMillis: Long,
-        count: Int,
-    ): List<Long>
+    public fun startOfDay(provider: DayBoundaryProvider, epochMillis: Long): Long
+    public fun lastDays(provider: DayBoundaryProvider, epochMillis: Long, count: Int): List<Long>
 }
 ```
 
-Contract: `startOfDay` returns the local midnight of the day containing the
-timestamp. `addDays` steps calendar days, so a 23- or 25-hour daylight-saving
-day is handled exactly. The provider is implemented per platform: `java.util.Calendar`
-on Android and `NSCalendar` on iOS. `lastDays` returns `count` local days,
-oldest first, ending with the day containing `todayEpochMillis`.
+Contract: the domain owns the rules and the platform supplies the time zone.
+`addDays` steps whole calendar days, so a 23- or 25-hour day is handled exactly.
+`lastDays` always returns exactly `count` days, oldest first, ending with the day
+that contains the timestamp.
 
-The provider is an interface rather than a static helper because the shared
-modules have no time-zone library, and because it keeps the day arithmetic
-testable with a fixed day length.
-
-### 1.9 `NutritionCalculator`
+### 1.8 `NutritionCalculator`
 
 ```kotlin
 public object NutritionCalculator {
-    public fun contribution(
-        nutritionValues: List<NutritionValue>,
-        quantityGrams: Double,
-    ): NutritionTotals
-
+    public fun contribution(product: Product, quantityGrams: Double): NutritionTotals
+    public fun servingGrams(product: Product): Double?
+    public fun defaultQuantityGrams(product: Product): Double
     public fun entryFor(
         product: Product,
         mealType: MealType,
@@ -186,74 +169,142 @@ public object NutritionCalculator {
 }
 ```
 
-Contract: the quantity is always expressed in grams. A value reported per
-100 g is scaled by `quantityGrams / 100`; a value reported per serving is
-scaled by `quantityGrams / servingGrams` when the serving size can be read
-from the product's serving description, and stays unknown when it cannot. A
-product with no nutrition values contributes nothing but is still logged.
+Contract: a value per 100 g is scaled linearly; a value per serving is scaled by
+the serving size the product declares; a basis that cannot be resolved yields no
+number at all, because a wrong number is worse than an absent one.
 
-### 1.10 Summaries - `core:domain`
+## 2. Domain - `core:domain`, package `domain.navigation`
 
 ```kotlin
-public data class DailySummary(
-    val dayEpochMillis: Long,
-    val entries: List<DiaryEntry>,
-    val entriesByMeal: Map<MealType, List<DiaryEntry>>,
-    val totals: NutritionTotals,
-    val mealTotals: Map<MealType, NutritionTotals>,
-    val goal: NutritionGoal,
-)
+public enum class NutriLogDestination(
+    public val route: String,
+    public val label: String,
+) {
+    TODAY("today", "Today"),
+    LIBRARY("library", "Library"),
+    MORE("more", "More"),
+    ;
 
-public data class DaySummary(
-    val dayEpochMillis: Long,
-    val entryCount: Int,
-    val totals: NutritionTotals,
-    val isEmpty: Boolean,
-)
+    public companion object {
+        public val start: NutriLogDestination = TODAY
+        public fun fromRoute(route: String?): NutriLogDestination?
+    }
+}
 
-public data class WeeklySummary(
-    val days: List<DaySummary>,
-    val averageTotals: NutritionTotals,
-    val daysWithEntries: Int,
-)
+public object NutriLogRoutes {
+    public const val TODAY: String = "today"
+    public const val LIBRARY: String = "library"
+    public const val MORE: String = "more"
+    public const val ADD_FOOD_GRAPH: String = "addfood"
+    public const val ADD_FOOD_SOURCE: String = "addfood/source"
+    public const val ADD_FOOD_QUANTITY: String = "addfood/quantity"
+    public const val PRODUCT_DETAIL: String = "product/{code}"
+    public const val COACH: String = "coach"
+    public const val WEEKLY: String = "weekly"
 
-public object SummaryCalculator {
-    public const val DAYS_IN_WEEK: Int = 7
-
-    public fun daily(
-        dayEpochMillis: Long,
-        entries: List<DiaryEntry>,
-        goal: NutritionGoal,
-    ): DailySummary
-
-    public fun weekly(
-        dayBoundaryProvider: DayBoundaryProvider,
-        todayEpochMillis: Long,
-        entries: List<DiaryEntry>,
-    ): WeeklySummary
+    public fun productDetail(code: String): String
 }
 ```
 
-Contract: `daily` always reports every meal of the day, including the meals
-with no entries. `weekly` always returns exactly seven days, oldest first,
-ending with today. The average is over the days that have entries only; a day
-with no entries is `isEmpty = true` and is never counted as a zero-intake day
-in the average.
+Contract: the model is plain data with no Compose types, so a future native
+SwiftUI navigation can be built from the same definitions (ADR-0015, ADR-0019).
 
-The summaries live in `core:domain` and not in `feature:summary`: the daily
-summary is needed by the diary feature, and the module policy forbids a
-feature module from depending on another feature module.
+## 3. Domain - `core:domain`, package `domain.assistant`
 
-## 2. Feature - `feature:diary`
+```kotlin
+public enum class AssistantRole { USER, ASSISTANT }
+
+public data class AssistantMessage(
+    public val role: AssistantRole,
+    public val text: String,
+)
+
+public sealed interface AssistantAction {
+    public data class LogFood(
+        public val productCode: String,
+        public val quantityGrams: Double,
+        public val mealType: MealType,
+    ) : AssistantAction
+
+    public data class RemoveEntry(public val entryId: Long) : AssistantAction
+
+    public data class ChangeEntry(
+        public val entryId: Long,
+        public val quantityGrams: Double? = null,
+        public val mealType: MealType? = null,
+    ) : AssistantAction
+}
+
+public data class AssistantContext(
+    public val entries: List<DiaryEntry>,
+    public val goal: NutritionGoal,
+    public val libraryCodes: List<String>,
+)
+
+public data class AssistantReply(
+    public val text: String,
+    public val actions: List<AssistantAction>,
+)
+
+public interface AssistantClient {
+    public suspend fun complete(
+        public val messages: List<AssistantMessage>,
+        public val context: AssistantContext,
+    ): AssistantReply
+}
+```
+
+Contract: the client returns **proposals**, never applied changes. Free text is
+displayed and never executed.
+
+```kotlin
+public class AssistantActionExecutor(
+    private val diaryRepository: DiaryRepository,
+    private val productRepository: ProductSearchRepository,
+) {
+    public suspend fun validate(action: AssistantAction): ActionValidation
+    public suspend fun apply(action: AssistantAction): ActionOutcome
+}
+```
+
+Contract: `validate` checks the action against the domain rules and against the
+catalogue, and reports why an action was rejected. `apply` writes only when the
+action is valid; an invalid action leaves the diary untouched.
+
+## 4. Data - `core:data`, package `data.assistant`
+
+```kotlin
+public class AiGatewayClient(
+    private val httpClient: HttpClient,
+    private val baseUrl: String,
+) {
+    public suspend fun complete(
+        public val messages: List<AssistantMessage>,
+        public val context: AssistantContext,
+    ): AssistantReply
+}
+```
+
+Contract: the gateway contract is `POST {baseUrl}/v1/chat` with
+`{"messages":[...],"context":{...}}` and the response
+`{"reply":"...","actions":[...]}`. The client is provider-agnostic. When
+`baseUrl` is blank the assistant is disabled and the caller must report that
+state rather than attempt a request.
+
+The gateway is exercised with Ktor's `MockEngine` in tests. No test performs a
+live network call.
+
+## 5. Feature - `feature:diary`
 
 ```kotlin
 public data class DiaryState(
-    val dayEpochMillis: Long = 0,
-    val entriesByMeal: Map<MealType, List<DiaryEntry>> = emptyMap(),
-    val totals: NutritionTotals = NutritionTotals.ZERO,
-    val mealTotals: Map<MealType, NutritionTotals> = emptyMap(),
-    val goal: NutritionGoal = NutritionGoal(),
-    val isLoading: Boolean = true,
+    public val dayEpochMillis: Long = 0,
+    public val entriesByMeal: Map<MealType, List<DiaryEntry>> = emptyMap(),
+    public val totals: NutritionTotals = NutritionTotals.ZERO,
+    public val mealTotals: Map<MealType, NutritionTotals> = emptyMap(),
+    public val goal: NutritionGoal = NutritionGoal(),
+    public val remaining: NutritionTotals = NutritionTotals.ZERO,
+    public val isLoading: Boolean = true,
 )
 
 public class DiaryViewModel(
@@ -265,87 +316,147 @@ public class DiaryViewModel(
 ) {
     public val state: StateFlow<DiaryState>
     public fun refresh()
-    public fun log(product: Product, mealType: MealType, quantityGrams: Double)
     public fun removeEntry(id: Long)
     public fun updateGoal(goal: NutritionGoal)
-    public fun clear()
 }
 ```
 
 Contract: the state is a single immutable value. `refresh` re-reads the current
 day, so a day boundary crossed while the app is open is picked up. The totals in
-the state are always the sum of the entries in the state. `log` snapshots the
-product name and its nutrition values, so a later catalogue change cannot
-rewrite what the user ate.
+the state are always the sum of the entries in the state.
 
-## 3. Feature - `feature:summary`
+## 6. Feature - `feature:summary`
 
 ```kotlin
-public class SummaryViewModel(
-    private val diaryRepository: DiaryRepository,
-    private val dayBoundaryProvider: DayBoundaryProvider,
-    private val clock: EpochClock,
-    private val scope: CoroutineScope,
+public data class DaySummary(
+    public val dayEpochMillis: Long,
+    public val entryCount: Int,
+    public val totals: NutritionTotals,
+    public val isEmpty: Boolean,
+)
+
+public data class WeeklySummary(
+    public val days: List<DaySummary>,
+    public val averageTotals: NutritionTotals,
+    public val daysWithEntries: Int,
+)
+
+public object SummaryCalculator {
+    public fun daily(
+        public val dayEpochMillis: Long,
+        public val entries: List<DiaryEntry>,
+        public val goal: NutritionGoal,
+    ): DailySummary
+
+    public fun weekly(
+        public val dayBoundaryProvider: DayBoundaryProvider,
+        public val todayEpochMillis: Long,
+        public val entries: List<DiaryEntry>,
+    ): WeeklySummary
+}
+```
+
+Contract: `weekly` always returns exactly seven days, oldest first, ending with
+today. The average is over the days that have entries only; a day with no
+entries is `isEmpty = true` and is never counted as a zero-intake day.
+
+## 7. Feature - `feature:assistant`
+
+```kotlin
+public sealed interface AssistantAvailability {
+    public data object Ready : AssistantAvailability
+    public data object NotConfigured : AssistantAvailability
+    public data object Offline : AssistantAvailability
+    public data object ConsentRequired : AssistantAvailability
+}
+
+public data class AssistantState(
+    public val availability: AssistantAvailability = AssistantAvailability.NotConfigured,
+    public val messages: List<AssistantMessage> = emptyList(),
+    public val pendingProposal: AssistantReply? = null,
+    public val isSending: Boolean = false,
+    public val error: String? = null,
+)
+
+public class CoachViewModel(...) {
+    public val state: StateFlow<AssistantState>
+    public fun send(text: String)
+    public fun confirmProposal()
+    public fun dismissProposal()
+    public fun grantConsent()
+}
+```
+
+Contract: nothing is written to the diary until `confirmProposal` is called. The
+availability state distinguishes "not configured" from "offline", because the
+user's next action differs.
+
+## 8. Feature - `feature:scan`
+
+```kotlin
+public sealed interface BarcodeResolution {
+    public data class Resolved(public val product: Product) : BarcodeResolution
+    public data class NotInCache(public val code: String) : BarcodeResolution
+    public data class Unknown(public val code: String) : BarcodeResolution
+}
+
+public class BarcodeResolver(
+    private val productRepository: ProductSearchRepository,
 ) {
-    public val weeklySummary: StateFlow<WeeklySummary?>
-    public fun refresh()
-    public fun clear()
+    public suspend fun resolve(code: String): BarcodeResolution
 }
 ```
 
-Contract: the summary is `null` until the first week has been read, so the
-screen can show a progress indicator instead of an empty week that is not
-empty yet. The summary is computed from the stored entries on every change and
-is never cached in the database.
+Contract: the resolver resolves through the existing
+`ProductSearchRepository.getProduct(code)`, so a scanned code uses the same
+offline cache as the rest of the catalogue and no second data source is
+introduced.
 
-## 4. Navigation - `androidApp`
+## 9. Navigation - `androidApp`
 
-### 4.1 `NutriLogDestination`
-
-```kotlin
-public enum class NutriLogDestination(public val route: String, public val label: String) {
-    TODAY("today", "Today"),
-    SEARCH("search", "Search"),
-    LIBRARY("library", "Library"),
-    MORE("more", "More"),
-    ;
-
-    public companion object {
-        public val start: NutriLogDestination = TODAY
-        public fun fromRoute(route: String?): NutriLogDestination?
-    }
-}
-```
-
-### 4.2 Route constants
+### 9.1 Route table
 
 | Route | Kind | Bottom bar | Purpose |
 | --- | --- | --- | --- |
 | `today` | destination | shown | The diary home |
-| `search` | destination | shown | Catalogue search |
 | `library` | destination | shown | The personal food library |
-| `more` | destination | shown | Goals, premium, about |
+| `more` | destination | shown | Goals, coach, premium, privacy, about |
+| `addfood` | nested graph | hidden | The add-food flow |
+| `addfood/source` | nested step | hidden | Search, my foods, scan |
+| `addfood/quantity` | nested step | hidden | Quantity, meal and confirmation |
 | `product/{code}` | child | hidden | The product detail |
-| `add-food` | child | hidden | The add-food flow |
-| `weekly` | child | hidden | The weekly summary |
+| `coach` | child | hidden | The AI assistant |
+| `weekly` | child | hidden | The seven-day summary |
 
-### 4.3 Navigation rules
+### 9.2 Navigation rules
 
 1. The app starts on `today`.
 2. Selecting a destination navigates to its root with
    `popUpTo(startDestination) { inclusive = false }` and `launchSingleTop = true`,
-   so every child screen above the home is removed. A tab is therefore always
-   presented as its own root.
+   so every child screen above the home is removed. A destination is therefore
+   always presented as its own root.
 3. Re-selecting the current destination is a no-op; no duplicate entry is pushed.
-4. A child screen is pushed on the current destination's stack. Back returns to
-   the screen that opened it.
+4. A child screen is pushed on the current stack. Back returns to the screen that
+   opened it.
 5. From a destination other than `today`, back returns to `today`.
-6. The product detail is a route, not shared view-model state, so leaving a tab
-   discards it.
+6. The product detail is a route, not shared view-model state, so leaving a
+   destination discards it.
+7. The bottom bar is visible only on the three top-level routes. The visibility
+   is derived from the route hierarchy, never from a lookup that can silently
+   fail for a nested route.
+8. The floating action button opens `addfood/source` from `today` and from
+   `library`.
+9. The meal picker is a modal bottom sheet. It creates no navigation entry.
 
-## 5. UI contracts
+### 9.3 The add-food flow
 
-### 5.1 `TodayScreen`
+The source step may pre-select a food, when the flow was opened from a Library
+row or from a product detail, and it may pre-select a meal, when the flow was
+opened from a meal section. The quantity step confirms the entry.
+
+## 10. UI contracts
+
+### 10.1 `TodayScreen`
 
 ```kotlin
 @Composable
@@ -356,25 +467,25 @@ public fun TodayScreen(
     onOpenProduct: (String) -> Unit,
     onRemoveEntry: (Long) -> Unit,
     onOpenWeekly: () -> Unit,
+    onOpenCoach: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 )
 ```
 
-### 5.2 `AddFoodScreen`
+### 10.2 `AddFoodScreen`
 
 ```kotlin
 @Composable
 public fun AddFoodScreen(
-    initialMeal: MealType,
-    selectedProduct: Product?,
-    searchState: ProductSearchState,
-    library: List<SavedProduct>,
-    onMealSelected: (MealType) -> Unit,
+    state: AddFoodState,
+    onSourceSelected: (AddFoodSource) -> Unit,
     onQueryChanged: (String) -> Unit,
     onSearch: () -> Unit,
     onProductSelected: (String) -> Unit,
+    onBarcodeScanned: (String) -> Unit,
     onQuantityChanged: (Double) -> Unit,
+    onMealSelected: (MealType) -> Unit,
     onConfirm: (MealType, String, Double) -> Unit,
     onBack: () -> Unit,
     contentPadding: PaddingValues,
@@ -386,7 +497,7 @@ Contract: the quantity step shows the calories and macros the chosen quantity
 produces, derived from the product's nutrition values and their basis, before the
 user confirms.
 
-### 5.3 `LibraryScreen`
+### 10.3 `LibraryScreen`
 
 ```kotlin
 @Composable
@@ -401,13 +512,14 @@ public fun LibraryScreen(
 )
 ```
 
-### 5.4 `MoreScreen`
+### 10.4 `MoreScreen`
 
 ```kotlin
 @Composable
 public fun MoreScreen(
     goal: NutritionGoal,
     onGoalChanged: (NutritionGoal) -> Unit,
+    onOpenCoach: () -> Unit,
     purchaseContent: (@Composable () -> Unit)?,
     onOpenPrivacyPolicy: () -> Unit,
     contentPadding: PaddingValues,
@@ -415,9 +527,27 @@ public fun MoreScreen(
 )
 ```
 
-## 6. Unchanged contracts
+### 10.5 `CoachScreen`
+
+```kotlin
+@Composable
+public fun CoachScreen(
+    state: AssistantState,
+    onSend: (String) -> Unit,
+    onConfirmProposal: () -> Unit,
+    onDismissProposal: () -> Unit,
+    onGrantConsent: () -> Unit,
+    onBack: () -> Unit,
+    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+)
+```
+
+## 11. Unchanged contracts
 
 - `ProductSearchRepository`, `RecentSearchRepository`, `SavedProductRepository`
   and `PurchaseRepository` keep their existing signatures and behaviour.
 - `PurchaseClient` and the purchase state machine are unchanged; only the
-  placement of the purchase section changes.
+  placement of the purchase section and the product code change.
+- The per-food purchasable codes are replaced by the single premium product code,
+  which is one shared constant.

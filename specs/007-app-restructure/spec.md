@@ -304,9 +304,9 @@ reachable from More.
 - **A nutrient the catalogue does not report**: the entry is logged with that
   nutrient unknown. The day total for it is unknown, and the UI says "unknown"
   rather than "0 g". Zero and unknown are different claims.
-- **One entry with a value and one without**: the total is the sum of the known
-  values, reported as a lower bound, and the summary lists that nutrient as
-  incomplete.
+- **One entry with a value and one without**: the total for that nutrient is
+  unknown, because a partial sum would claim more than is actually known. The
+  summary lists that nutrient as incomplete instead of showing a number.
 - **Day boundary crossed while the app is open**: the Today screen re-reads the
   current day; entries are bucketed by the local day they were logged in, and a
   new day starts with an empty diary.

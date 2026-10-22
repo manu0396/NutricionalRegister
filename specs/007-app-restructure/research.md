@@ -76,20 +76,28 @@ inventing new module boundaries.
 
 ### Data
 
-`ProductDatabase` (SQLDelight, schema version 1) holds `Product`,
-`ProductNutrition`, `SearchSnapshot`, `SearchSnapshotProduct`, `RecentSearch`,
+`ProductDatabase` (SQLDelight) holds `Product`, `ProductNutrition`,
+`SearchSnapshot`, `SearchSnapshotProduct`, `RecentSearch`,
 `RecentSearchSequence`, `SavedProduct`, `PurchaseRecord`. There is **no diary
 table**, so a schema migration is required.
+
+The schema was at version 2 when this feature started: `1.sqm` creates
+`SavedProduct` and `PurchaseRecord` on top of the original catalogue tables.
+The `databases/2.db` snapshot for that version was **missing**, which meant a
+fresh checkout could not verify the migration chain past version 1 and the v2
+state was never checked. This feature reconstructs `2.db` from `1.db` plus
+`1.sqm`, adds `2.sqm` for the diary tables, and generates `3.db`, so the whole
+chain verifies from v1.
 
 ### Screens
 
 | Screen | Role today | Role after the restructure |
 | --- | --- | --- |
-| `ProductSearchScreen` | root, catalogue browser | Search tab, and the search step of the add-food flow |
-| `ProductDetailScreen` | overlay inside Search/Saved | Child route of the tab that opened it, with an "Add to diary" action |
-| `SavedProductsScreen` | tab of saved products | Library tab, "my foods" with one-tap logging |
+| `ProductSearchScreen` | root, catalogue browser | The search step of the add-food flow, no longer a destination of its own |
+| `ProductDetailScreen` | overlay inside Search/Saved | The `product/{code}` route, with an "Add to diary" action |
+| `SavedProductsScreen` | tab of saved products | The Library tab, "my foods" with one-tap logging |
 | `DiaryPlaceholderScreen` | "coming soon" placeholder | **Today tab, the real diary** |
-| `PurchaseSection` | inline in Saved | Inline in the More tab, as the premium upsell |
+| `PurchaseSection` | inline in Saved | Inline in the More tab, as the single premium unlock |
 
 ## 4. Brainstorming: what a sellable nutrition app actually is
 
@@ -159,19 +167,24 @@ Search exists only as a step of the add-food flow.
 Bottom bar:  [ Today ] [ Search ] [ Scan ] [ Library ] [ More ]
 ```
 
-Decision: **Option A**. Reasons:
+Decision: **Option B, three tabs plus a floating action button**, with the scanner
+built as a step of the add-food flow rather than as a tab. Reasons:
 
-- The Search tab keeps a fully built, fully tested feature (F1) reachable in one
-  tap instead of burying it; the add flow *also* offers search, so nothing is
-  lost.
-- Option B leaves the bottom bar thin and the search feature feeling hidden.
-- Option C needs a real barcode scanner. `feature:scan` is empty, scanning needs a
-  camera dependency, a new ADR under constitution rule III, camera permission
-  handling and its own hardware testing. That is a separate feature, not part of
-  a restructure. It is explicitly out of scope here and recorded as follow-up
-  work; the empty module is left untouched.
-- Four tabs is the sweet spot for a bottom bar: every destination is reachable,
-  labelled, and the bar does not overflow.
+- The complaint that was filed was precisely that the app opens on a search box.
+  A catalogue is an **input to a diary**, not a peer of it, so search belongs
+  inside the logging flow rather than beside it. The search feature itself is not
+  lost: it is still the search step of the add flow, and it is still reachable in
+  one tap from the Library empty state and from the Today app bar.
+- Three destinations plus one primary action match what the diary actually needs,
+  and they keep the bar legible at large text scales. A fourth tab would compete
+  with the FAB for the same job.
+- The scanner does not need its own destination. It is a way of choosing a food,
+  so it belongs in the food-selection step, and it keeps the empty `feature:scan`
+  module meaningful without inventing a fourth tab.
+- The FAB gives the diary the single prominent "log something" action that the
+  category anatomy demands, without spending a tab on it.
+
+See ADR-0019 for the recorded navigation decision.
 
 ## 5. Design direction
 
@@ -196,29 +209,119 @@ A commercial nutrition app reads as **calm, data-first and trustworthy**.
 | --- | --- | --- |
 | Detail screen state | Navigation route (`product/{code}`) instead of ViewModel state | Scopes the detail to the tab that opened it; fixes the reported bug at the root |
 | Tab switching | Pop to the home destination, then push the target | Every tab is always its own root; no stale child screen can survive a tab switch |
-| Diary persistence | New `DiaryEntry` table, SQLDelight schema v1 -> v2 with a `.sqm` migration | Reuses the existing offline-first store; `verifyMigrations` stays enabled |
+| Bottom-bar visibility | Derived from the route hierarchy, not from a destination lookup | An enum lookup silently returns "no tab" inside a nested graph and blanks the bar |
+| Route model location | Shared, in `core:domain`, as plain data | ADR-0015 promised a platform-neutral destination model; the iOS shell needs the same routes |
+| Diary persistence | New `DiaryEntry` table, SQLDelight schema v2 -> v3 with a `.sqm` migration | Reuses the existing offline-first store; `verifyMigrations` stays enabled |
+| Schema snapshots | `2.db` reconstructed and `3.db` generated, both committed | The v2 snapshot was missing, so the chain could not be verified past v1 on a fresh checkout |
 | Nutrition values on an entry | Snapshot the nutrient values at log time | The catalogue can change; a logged day must not |
-| Day bucketing | Store `day_epoch_millis` (local midnight) alongside the timestamp | Grouping by day must not depend on the device time zone at read time |
-| Goals | Singleton `NutritionGoal` row, user-editable | Goals are the premium hook and the anchor of the daily summary |
+| Unknown nutrients | Nullable per nutrient, and a total is unknown when any contributing entry is unknown | A tracker that reports "0 g of fat" for an unreported nutrient is stating something false |
+| Day bucketing | Store `day_epoch_millis` (local midnight) alongside the timestamp, computed through a platform `DayBoundaryProvider` | Grouping by day must not depend on the device time zone at read time, and stepping days must survive a 23- or 25-hour day |
+| Goals | Singleton `NutritionGoal` row, user-editable from More | Progress without a target is not progress |
 | Weekly summary | Computed from the diary table, not stored | Derived data must not be stored twice |
-| Add-food flow | One screen with an explicit step state, not a multi-destination graph | The flow is short and linear; a single screen keeps the back stack honest |
-| Feature modules | `feature:diary` and `feature:summary` filled, `feature:scan` left empty | The modules already exist; the restructure fills the reserved slots |
+| Add-food flow | A nested graph with a source step and a quantity step | The flow is short and linear, but it is more than one screen, and a nested graph keeps the back stack honest |
+| Meal picker | A modal bottom sheet, not a route | A modal is not navigation and does not need a back-stack entry |
+| Feature modules | `feature:diary` and `feature:summary` filled, `feature:scan` given the shared barcode resolution, `feature:assistant` added | The modules already exist; the restructure fills the reserved slots and adds one for the new concern |
+| Module rename | `feature:savedproducts` is **not** renamed to `feature:library` | The rename would churn the dependency allowlist, the framework exports and every import, for no product value. The user chose the UI name "Library" and left the module name alone |
+| Barcode decoding | CameraX plus the bundled ML Kit barcode model, in `androidApp` only | The bundled model decodes offline and does not need Play services on the handset. ADR-0017 |
+| Scanner testability | The decoder sits behind a project-owned `BarcodeDecoder` interface | The scanner screen must be testable without a camera |
+| Assistant transport | A remote LLM reached through a first-party AI gateway, over the already-approved Ktor client | The provider key must never ship inside the APK. ADR-0016 |
+| Assistant actions | Structured, validated in shared code, applied only after the user confirms | Free text from a model is never executed |
+| Assistant privacy | The user's message plus a minimal diary context, behind a first-use consent | The existing no-telemetry guarantee must stay true for everything except this explicit, consented path |
+| Purchase model | One premium product, re-pointed away from per-food codes, reachable only from More | Per-food pricing on a nutrition tracker is not a credible commercial model. ADR-0018 |
 | iOS | Not rebuilt | The brief scopes iOS to the scanner and diary screens and marks the rest out of scope; a full SwiftUI rebuild of five screens is a separate feature |
 
-## 7. Risks
+## 7. The assistant, the scanner and the purchase: what the second round changed
+
+A second clarification round settled the three items that were still open after the
+information architecture was chosen.
+
+### The AI assistant is a remote LLM, reached through a first-party gateway
+
+The user chose a remote LLM over an on-device deterministic engine, because free-form
+natural language is the thing a rule-based parser cannot do.
+
+That choice has one hard consequence that must be engineered around: **the LLM
+provider key cannot live in the app.** A key compiled into an APK is extractable by
+anyone who unzips it, and it becomes an unmetered liability billed to the publisher.
+So the app talks to a thin gateway that the publisher deploys, which holds the key,
+enforces rate limits and returns a provider-agnostic JSON envelope.
+
+Good news for the repository: **Ktor 3.6.0 is already approved (ADR-0005) and
+already used** for the catalogue client, so the gateway client needs no new
+third-party dependency. The whole assistant therefore costs no new licence
+obligation and no new HTTP stack.
+
+The costs are real and are recorded rather than hidden:
+
+- A server-side component now exists. It is a deployment prerequisite, not a
+  repository deliverable, and until it is deployed the assistant is explicitly
+  unavailable rather than silently broken.
+- The app is no longer fully offline. Everything except the assistant stays
+  offline-first, and the assistant says so when it has no connection.
+- There is a per-request cost to the publisher, which is what makes the premium
+  unlock the right thing to gate on.
+- The existing privacy guarantee needs an explicit, documented exception. The app
+  sends the user's own message and a minimal diary context, behind a first-use
+  consent, and never the catalogue, the recent search terms or the purchase
+  records.
+
+The shared action model is deliberately provider-agnostic: the same
+`AssistantAction` types could be served by an on-device engine later, so this
+decision does not lock the app to a vendor.
+
+### The scanner decodes on device
+
+The user confirmed barcode scanning is in scope, which reverses the earlier
+deferral. The implementation constraint that decides the design is the
+dependency policy: the camera stack and the decoder are **new third-party
+dependencies**, so they need an ADR (constitution rule III).
+
+The chosen stack is CameraX plus the **bundled** ML Kit barcode model. The bundled
+variant matters: it decodes with no network and no Play services on the handset,
+so the core logging flow never fails because a model has not downloaded yet. The
+unbundled variant is smaller on disk but makes the first scan depend on the
+network, which is the wrong trade for the app's most important offline moment.
+
+The alternatives were considered and rejected: the Play Services code scanner
+needs Play services on the handset and cannot be themed or exercised on a
+standard emulator; ZXing over CameraX means hand-writing detection, rotation and
+focus handling; and a cloud resolution API would leak the user's shopping context
+for something the device can do locally.
+
+The scanner dependencies are declared in `androidApp` only, so the iOS framework
+is unaffected by construction.
+
+### The purchase is re-pointed to one premium product
+
+Per-food pricing is not a credible commercial model for a nutrition tracker, and
+showing a purchase button on a bag of oats is worse than showing none. The
+purchase surface moves to More as a single unlock, and every per-food affordance
+is removed. The existing `PurchaseClient` contract is code-keyed already, so the
+change is a change of code and of placement, not of architecture.
+
+What the unlock grants is the assistant, because it is the only feature with a
+per-use cost to the publisher. The entitlement check on the client is advisory;
+the gateway is the place where it can actually be enforced.
+
+## 8. Risks
 
 | Risk | Mitigation |
 | --- | --- |
-| Scope is large (new domain, new data, new screens, new navigation, new design system) | Deliver in phases behind the spec's task list; every phase keeps the app compiling and the suite green |
-| Schema migration breaks existing installs | Version 2 migration is additive only (`CREATE TABLE`), so version 1 databases migrate without data loss |
-| Navigation rewrite breaks existing instrumented tests | Navigation tests are rewritten as part of the same change, and the new tab model is covered by new tests |
+| Scope is large (new domain, new data, new screens, new navigation, new design system, an assistant and a scanner) | Deliver in phases behind the spec's task list; every phase keeps the app compiling and the suite green |
+| Schema migration breaks existing installs | The v2 to v3 migration is additive only (`CREATE TABLE`), so v2 databases migrate without data loss, and the chain is verified from v1 |
+| The navigation rewrite breaks existing instrumented tests | Navigation tests are rewritten as part of the same change, and the new tab model is covered by new tests |
 | New shared code must satisfy the 80 % coverage gate on `core:domain` and `core:data` | Unit tests are written with the implementation, not after |
 | The design system change touches every screen | The theme is changed first, then screens are migrated one at a time, verifying compilation after each |
-| `feature:summary` and `feature:diary` are new modules and the module dependency policy is enforced | The policy allowlist is updated in the same change that adds the dependency |
+| `feature:summary`, `feature:diary` and `feature:assistant` are new modules and the module dependency policy is enforced | The policy allowlist is updated in the same change that adds the dependency |
+| The assistant cannot be demonstrated because no gateway is deployed | The disabled state is explicit and honest; the shared domain is provider-agnostic, so an on-device engine could serve the same contract |
+| The assistant sends diary data to a third party | The payload is restricted and asserted by a test, consent is explicit, and the More destination discloses it |
+| The scanner dependencies inflate the APK | They are `androidApp`-only and R8-shrinkable; the size is measured and recorded in ADR-0017 |
+| The scanner cannot be exercised on a headless emulator | The decoder sits behind an interface, so the screen is tested with a fake decoder |
 
-## 8. References
+## 9. References
 
 - Repository brief: `docs/Project brief for Spec Kit KMP nutrition diary.md` (F1-F5)
 - Existing feature specs: `specs/002-product-search`, `specs/004-saved-products-navbar`, `specs/005-ui-redesign`
-- Architecture decisions: `docs/adr/0001`-`0015`
+- Architecture decisions: `docs/adr/0001`-`0019`
+- The brainstorming record for this feature: [brainstorming.md](brainstorming.md)
 - Category references: MyFitnessPal, Cronometer, Lose It!, Lifesum, YAZIO

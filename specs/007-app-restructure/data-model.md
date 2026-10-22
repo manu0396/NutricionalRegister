@@ -64,21 +64,26 @@ The nutrition of a set of entries.
 | `proteinGrams` | Double? | `null` when no entry reports it |
 | `carbohydrateGrams` | Double? | `null` when no entry reports it |
 | `fatGrams` | Double? | `null` when no entry reports it |
-| `incomplete` | Set<Nutrient> | Components that only some entries report |
 
-Operations: `plus(other)` for addition, `scaledBy(factor)` for scaling, and
-`remainingAgainst(goal)` for the amount left before the goal is reached.
+Operations: `plus(other)` for addition, `scaledBy(factor)` for scaling,
+`remainingAgainst(goal)` for the amount left before the goal is reached, and
+`fromEntries(entries)` for the total of a set of entries. `isComplete` reports
+whether every component is known.
 
 The aggregation rule is conservative about honesty and generous about
 usefulness:
 
 - No entry reports a nutrient: the total is **unknown** (`null`), never zero.
-- Some entries report it and others do not: the total is the sum of the
-  reported values and the nutrient is listed in `incomplete`, so the UI shows a
-  lower bound and says which nutrients are incomplete.
-- Every entry reports it: the total is exact and `incomplete` is empty.
+- Some entries report it and others do not: the total is **unknown** for that
+  nutrient as well, because a partial sum would claim more than is known. The
+  UI reports the nutrient as incomplete rather than as a number.
+- Every entry reports it: the total is exact.
 
 The empty total is a known zero: nothing has been eaten yet.
+
+The implementation therefore carries no separate "incomplete" set. The
+nullability of each component already encodes the distinction, and `isComplete`
+answers "is anything unknown" for the whole total.
 
 ### NutritionGoal (domain entity)
 
@@ -118,6 +123,68 @@ The last seven days.
 Each `DaySummary` carries the day, the entry count, that day's totals, and an
 `isEmpty` flag. An empty day reports zero totals **and** `isEmpty = true`, so the
 UI can show it as "no entries" rather than as "0 kcal eaten".
+
+### AssistantMessage (domain value object)
+
+One turn of the conversation with the coach.
+
+| Attribute | Type | Notes |
+| --- | --- | --- |
+| `role` | AssistantRole | `USER` or `ASSISTANT` |
+| `text` | String | The message body; never blank |
+| `proposal` | AssistantAction? | The action the assistant proposes, when it proposes one |
+
+### AssistantAction (domain value object)
+
+A structured change the assistant proposes. Every action is validated before it
+can be applied, and an invalid action is rejected with an explanation while the
+diary is left untouched.
+
+| Variant | Fields | Meaning |
+| --- | --- | --- |
+| `LogFood` | `productCode`, `quantityGrams`, `mealType` | Log a food into a meal |
+| `RemoveEntry` | `entryId` | Remove a logged entry |
+| `ChangeEntry` | `entryId`, `quantityGrams?`, `mealType?` | Change a logged entry |
+
+Validation: `productCode` is not blank, `quantityGrams` is finite and greater
+than zero, `mealType` is one of the four meals, and `entryId` is positive. A
+`LogFood` whose code is not in the catalogue is rejected.
+
+### AssistantContext (domain value object)
+
+The minimal context sent with a request.
+
+| Attribute | Type | Notes |
+| --- | --- | --- |
+| `entries` | List<DiaryEntry> | Today's logged entries only |
+| `goal` | NutritionGoal | The current daily goals |
+| `libraryCodes` | List<String> | The codes of the user's library foods |
+
+The catalogue, the recent search terms and the purchase records are **never**
+part of the context.
+
+### AssistantReply (domain value object)
+
+| Attribute | Type | Notes |
+| --- | --- | --- |
+| `text` | String | The reply shown to the user |
+| `actions` | List<AssistantAction> | The proposed changes, each still unapplied |
+
+### BarcodeResolution (domain value object)
+
+The outcome of resolving a scanned code.
+
+| Variant | Fields | Meaning |
+| --- | --- | --- |
+| `Resolved` | `product: Product` | The code is in the catalogue |
+| `NotInCache` | `code: String` | The code is not in the offline catalogue cache |
+| `Unknown` | `code: String` | The code is not a product this app knows |
+
+### PremiumEntitlement (domain value object)
+
+Whether the single premium product has been verified as purchased. The premium
+product code is one shared constant, `nutrilog_pro`, and the entitlement
+currently grants access to the assistant.
 
 ## Persistence
 
@@ -163,7 +230,24 @@ The schema goes from version 2 to version 3. `2.sqm` contains exactly the two
 without any data change. `1.sqm` (version 1 to 2) is unchanged, so a database
 created by an earlier release still migrates in one step.
 
-`verifyMigrations` stays enabled and checks the whole chain.
+### Schema snapshots
+
+SQLDelight verifies the migration chain against the snapshots in
+`core/data/src/commonMain/sqldelight/databases/`:
+
+| File | Schema version | How it is produced |
+| --- | --- | --- |
+| `1.db` | 1 | Committed with the original schema |
+| `2.db` | 2 | Reconstructed from `1.db` plus `1.sqm` |
+| `3.db` | 3 | Generated by `generateCommonMainProductDatabaseSchema` |
+
+`2.db` was missing before this feature, which meant a fresh checkout could not
+verify the chain past version 1 and the v2 state was never checked. Both `2.db`
+and `3.db` are committed, so the whole chain verifies from v1 on a clean
+checkout.
+
+`verifyMigrations` stays enabled and checks the whole chain, and the verification
+task is wired into the CI workflow, which previously never invoked it.
 
 ### Unchanged
 
