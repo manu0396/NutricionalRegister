@@ -462,3 +462,53 @@ do not infer successful verification from generated files alone.
   accounts/testers, and `.storekit` configuration are absent, so a live charge is
   not exercised; recorded in `specs/004-saved-products-navbar/plan.md` (the
   purchase path is built and unit/instrumented/simulator verified against fakes).
+
+### App restructure to the Tracker Shell (spec 007)
+
+- **Scope**: restructure the prototype (a search box and a saved list) into a
+  nutrition tracker: the Tracker Shell with Today, Library and More and a
+  floating action button, the diary as the home, the add-food flow as a
+  two-step route with a barcode source, the product detail as a route, the
+  Coach as a remote-LLM assistant behind a first-party gateway, a single
+  premium unlock, and a full re-skin.
+- **AI assistance**: multi-agent implementation (a diarised wave of subagents
+  under one orchestrator) over the Spec Kit flow of specification 007.
+- **Review**: Pending maintainer review.
+- **Navigation defects reported and their root causes**:
+  1. The bottom bar went blank inside a child screen: the bar's visibility came
+     from a lookup of the current route in an enum that answers null for a
+     nested route, and the rule treated "null" as "hide".
+  2. A product detail resurrected after a switch of destination: the detail was
+     shared view-model state, and the destination switch saved and restored it.
+  3. The back label lied: the detail was the same composable for every
+     destination, so "Back to search" was printed no matter who had opened it.
+  4. `openProductCode` was never wired: the destination model had no route for
+     a product detail, so the affordance existed and did nothing.
+  The fix is one structural decision (ADR-0019): the detail is a route, the
+  step of the add-food flow is a route, the bar is derived from the route
+  hierarchy read from the deepest side, and a switch pops to the destination
+  root without saving or restoring state.
+- **Rejected directions**: an IA of one bottom tab per screen top-level
+  destination (a search tab) was rejected because a catalogue is an input to
+  the diary and not a peer of it; a rule-based insight engine beside the
+  Assistant was rejected because a deterministic heuristic cannot honestly
+  answer "what should I eat" and the gateway is a first-party service.
+- **Purchase re-point**: the per-food purchase was removed everywhere
+  (FR-032); the app sells exactly one premium product, `nutrilog_pro`, which
+  unlocks the Coach, offered only in More (ADR-0018).
+- **Assistant deployment prerequisite**: the Coach is unusable until the
+  publisher deploys the AI gateway and sets the `NUTRILOG_AI_PROXY_URL` Gradle
+  property; by design the build without it shows an explicit "not configured"
+  state instead of an input field that cannot work (ADR-0016, FR-025).
+- **Commands run**: `./gradlew :core:domain:testAndroidHostTest
+  :core:domain:koverVerify :core:domain:ktlintCheck`,
+  `:core:data:testAndroidHostTest :core:data:koverVerify
+  :core:data:ktlintCheck :core:data:verifySqlDelightMigration`,
+  `:feature:assistant:testAndroidHostTest`, `:feature:scan:testAndroidHostTest`,
+  `:feature:diary:testAndroidHostTest`, `:androidApp:assembleDebug`,
+  `:androidApp:compileDebugAndroidTestKotlin`, `:androidApp:ktlintCheck`,
+  `:shared:testAndroidHostTest`, `:architectureTest`, `:coverageVerify`,
+  `:kotlinLint`, `:plainTextCheck`.
+- **Results**: all of the above `BUILD SUCCESSFUL`; the schema migration chain
+  verifies from v1 on a fresh checkout; the Konsist architecture test now
+  matches the real package roots and fails when it inspects no file.
