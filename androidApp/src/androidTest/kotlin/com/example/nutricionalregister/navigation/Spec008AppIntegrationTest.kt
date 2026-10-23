@@ -2,10 +2,12 @@ package com.example.nutricionalregister.navigation
 
 import android.content.ContentValues
 import android.content.Context
+import android.view.inputmethod.InputMethodManager
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -46,6 +48,7 @@ class Spec008AppIntegrationTest {
 
         rule.onNodeWithTag("add-food-confirm").performClick()
 
+        waitForTag("add-food-query")
         rule.onNodeWithTag("add-food-query").assertIsDisplayed()
         rule.onNodeWithTag("product-add-to-diary").assertDoesNotExist()
         rule.onNodeWithTag("add-food-back").performClick()
@@ -62,9 +65,12 @@ class Spec008AppIntegrationTest {
         rule.onNodeWithTag("library-add-$PRODUCT_CODE").performClick()
         rule.onNodeWithTag("add-food-chosen-product").assertIsDisplayed()
         rule.onNodeWithTag("add-food-open-meal-sheet").performClick()
+        waitForText("Lunch")
+        rule.onNodeWithText("Lunch").assertIsDisplayed()
         rule.onNodeWithText("Lunch").performClick()
         rule.onNodeWithTag("add-food-confirm").performClick()
 
+        waitForTag("add-food-query")
         rule.onNodeWithTag("add-food-query").assertIsDisplayed()
         rule.onNodeWithTag("add-food-back").performClick()
         rule.onNodeWithTag("library-add-$PRODUCT_CODE").assertIsDisplayed()
@@ -80,7 +86,9 @@ class Spec008AppIntegrationTest {
         rule.onNodeWithTag("bottom-bar-more").performClick()
         rule.onNodeWithTag("goal-field-energy").performTextClearance()
         rule.onNodeWithTag("goal-field-energy").performTextInput("2500")
+        hideKeyboard()
         rule.onNodeWithTag("more-privacy-row").performClick()
+        waitForText("Privacy")
         rule.onNodeWithText("Privacy").assertIsDisplayed()
         rule.onNodeWithText("Close").performClick()
 
@@ -100,6 +108,27 @@ class Spec008AppIntegrationTest {
         rule.waitForIdle()
         rule.onNodeWithText("Today").assertIsDisplayed()
         rule.onNodeWithTag("nutrilog-bottom-bar").assertIsDisplayed()
+    }
+
+    private fun waitForTag(tag: String) {
+        rule.waitUntil(15_000) {
+            rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    private fun waitForText(text: String) {
+        rule.waitUntil(15_000) {
+            rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    private fun hideKeyboard() {
+        rule.activityRule.scenario.onActivity { activity ->
+            val inputMethodManager =
+                activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            inputMethodManager.hideSoftInputFromWindow(activity.window.decorView.windowToken, 0)
+        }
+        rule.waitForIdle()
     }
 
     private fun seedSearchCache() {

@@ -21,6 +21,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -68,6 +69,7 @@ class Spec008NavigationTest {
 
         rule.onNodeWithTag("add-food-confirm").performClick()
 
+        waitForTag("add-food-query")
         rule.onNodeWithTag("add-food-query").assertIsDisplayed()
         rule.onNodeWithText("Breakfast").assertDoesNotExist()
         rule.onNodeWithTag("product-add-to-diary").assertDoesNotExist()
@@ -154,6 +156,7 @@ class Spec008NavigationTest {
         rule.onNodeWithText("Lunch").performClick()
         rule.onNodeWithTag("add-food-confirm").performClick()
 
+        waitForTag("add-food-query")
         rule.onNodeWithTag("add-food-query").assertIsDisplayed()
         rule.onNodeWithTag("test-logged-count").assertTextEquals("1")
         rule.onNodeWithTag("add-food-back").performClick()
@@ -235,6 +238,12 @@ class Spec008NavigationTest {
         rule.onNodeWithTag("add-food-query").performTextInput("oats")
         rule.onNodeWithTag("add-food-search-submit").performClick()
         rule.onNodeWithText(TEST_PRODUCT.name).assertIsDisplayed()
+    }
+
+    private fun waitForTag(tag: String) {
+        rule.waitUntil(15_000) {
+            rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+        }
     }
 }
 
