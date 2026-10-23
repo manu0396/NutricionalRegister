@@ -13,10 +13,12 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.printToLog
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.nutricionalregister.MainActivity
@@ -120,16 +122,26 @@ class Spec008AppIntegrationTest {
     private fun waitForTag(tag: String) {
         rule.mainClock.advanceTimeBy(1_000)
         rule.waitForIdle()
-        rule.waitUntil(15_000) {
-            rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+        try {
+            rule.waitUntil(15_000) {
+                rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (failure: Throwable) {
+            rule.onRoot(useUnmergedTree = true).printToLog("navigation-debug-$tag")
+            throw failure
         }
     }
 
     private fun waitForText(text: String) {
         rule.mainClock.advanceTimeBy(1_000)
         rule.waitForIdle()
-        rule.waitUntil(15_000) {
-            rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+        try {
+            rule.waitUntil(15_000) {
+                rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (failure: Throwable) {
+            rule.onRoot(useUnmergedTree = true).printToLog("navigation-debug-$text")
+            throw failure
         }
     }
 
