@@ -50,9 +50,11 @@ class Spec008AppIntegrationTest {
         rule.onNodeWithTag("add-food-quantity").assertIsDisplayed()
         rule.onNodeWithText("Breakfast").assertIsDisplayed()
 
+        rule.onNodeWithTag("add-food-confirm").performScrollTo()
         rule.onNodeWithTag("add-food-confirm").assertIsEnabled()
         rule.onNodeWithTag("add-food-confirm").performClick()
 
+        waitForDiaryEntry()
         waitForTag("add-food-query")
         rule.onNodeWithTag("add-food-query").assertIsDisplayed()
         rule.onNodeWithTag("product-add-to-diary").assertDoesNotExist()
@@ -75,9 +77,11 @@ class Spec008AppIntegrationTest {
         waitForText("Lunch")
         rule.onNodeWithText("Lunch").assertIsDisplayed()
         rule.onNodeWithText("Lunch").performClick()
+        rule.onNodeWithTag("add-food-confirm").performScrollTo()
         rule.onNodeWithTag("add-food-confirm").assertIsEnabled()
         rule.onNodeWithTag("add-food-confirm").performClick()
 
+        waitForDiaryEntry()
         waitForTag("add-food-query")
         rule.onNodeWithTag("add-food-query").assertIsDisplayed()
         rule.onNodeWithTag("add-food-back").performClick()
@@ -128,7 +132,29 @@ class Spec008AppIntegrationTest {
             }
         } catch (failure: Throwable) {
             rule.onRoot(useUnmergedTree = true).printToLog("navigation-debug-$tag")
-            throw failure
+            val diagnosticTags =
+                listOf(
+                    "add-food-query",
+                    "add-food-confirm",
+                    "add-food-meal-sheet",
+                    "product-add-to-diary",
+                    "more-privacy-row",
+                    "nutrilog-bottom-bar",
+                ).associateWith { candidate ->
+                    rule.onAllNodesWithTag(candidate).fetchSemanticsNodes().size
+                }
+            throw AssertionError("Timed out waiting for $tag; current nodes: $diagnosticTags", failure)
+        }
+    }
+
+    private fun waitForDiaryEntry() {
+        rule.waitUntil(15_000) {
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null).use { database ->
+                database.rawQuery("SELECT COUNT(*) FROM DiaryEntry", null).use { cursor ->
+                    cursor.moveToFirst() && cursor.getInt(0) == 1
+                }
+            }
         }
     }
 
@@ -141,7 +167,17 @@ class Spec008AppIntegrationTest {
             }
         } catch (failure: Throwable) {
             rule.onRoot(useUnmergedTree = true).printToLog("navigation-debug-$text")
-            throw failure
+            val diagnosticTags =
+                listOf(
+                    "add-food-meal-sheet",
+                    "add-food-query",
+                    "add-food-confirm",
+                    "more-privacy-row",
+                    "nutrilog-bottom-bar",
+                ).associateWith { candidate ->
+                    rule.onAllNodesWithTag(candidate).fetchSemanticsNodes().size
+                }
+            throw AssertionError("Timed out waiting for text $text; current nodes: $diagnosticTags", failure)
         }
     }
 

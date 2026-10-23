@@ -72,9 +72,11 @@ class Spec008NavigationTest {
         rule.onNodeWithTag("product-add-to-diary").performClick()
         rule.onNodeWithText("Breakfast").assertIsDisplayed()
 
+        rule.onNodeWithTag("add-food-confirm").performScrollTo()
         rule.onNodeWithTag("add-food-confirm").assertIsEnabled()
         rule.onNodeWithTag("add-food-confirm").performClick()
 
+        rule.onNodeWithTag("test-logged-count").assertTextEquals("1")
         waitForTag("add-food-query")
         rule.onNodeWithTag("add-food-query").assertIsDisplayed()
         rule.onNodeWithText("Breakfast").assertDoesNotExist()
@@ -164,9 +166,11 @@ class Spec008NavigationTest {
         waitForText("Lunch")
         rule.onNodeWithText("Lunch").assertIsDisplayed()
         rule.onNodeWithText("Lunch").performClick()
+        rule.onNodeWithTag("add-food-confirm").performScrollTo()
         rule.onNodeWithTag("add-food-confirm").assertIsEnabled()
         rule.onNodeWithTag("add-food-confirm").performClick()
 
+        rule.onNodeWithTag("test-logged-count").assertTextEquals("1")
         waitForTag("add-food-query")
         rule.onNodeWithTag("add-food-query").assertIsDisplayed()
         rule.onNodeWithTag("test-logged-count").assertTextEquals("1")
@@ -261,7 +265,18 @@ class Spec008NavigationTest {
             }
         } catch (failure: Throwable) {
             rule.onRoot(useUnmergedTree = true).printToLog("navigation-debug-$tag")
-            throw failure
+            val diagnosticTags =
+                listOf(
+                    "test-current-flow-step",
+                    "test-logged-count",
+                    "add-food-confirm",
+                    "add-food-query",
+                    "product-add-to-diary",
+                    "test-diary-root",
+                ).associateWith { candidate ->
+                    rule.onAllNodesWithTag(candidate).fetchSemanticsNodes().size
+                }
+            throw AssertionError("Timed out waiting for $tag; current nodes: $diagnosticTags", failure)
         }
     }
 
@@ -376,6 +391,7 @@ private fun spec008TestApp() {
                         ).toString(),
                     modifier = Modifier.testTag("test-flow-session-stable"),
                 )
+                Text(destination.step.name, modifier = Modifier.testTag("test-current-flow-step"))
                 Text(loggedMeals.size.toString(), modifier = Modifier.testTag("test-logged-count"))
                 Text(addFoodState.quantityGrams.toString(), modifier = Modifier.testTag("test-flow-quantity"))
             },
