@@ -111,12 +111,16 @@ class Spec008AppIntegrationTest {
     }
 
     private fun waitForTag(tag: String) {
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.waitForIdle()
         rule.waitUntil(15_000) {
             rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
         }
     }
 
     private fun waitForText(text: String) {
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.waitForIdle()
         rule.waitUntil(15_000) {
             rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
         }

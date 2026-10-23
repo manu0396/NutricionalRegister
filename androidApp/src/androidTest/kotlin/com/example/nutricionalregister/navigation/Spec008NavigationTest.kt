@@ -241,6 +241,8 @@ class Spec008NavigationTest {
     }
 
     private fun waitForTag(tag: String) {
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.waitForIdle()
         rule.waitUntil(15_000) {
             rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
         }
