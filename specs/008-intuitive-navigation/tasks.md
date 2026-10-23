@@ -39,31 +39,31 @@ names the task's ids.
       (ADR-0021): when a flow is open the action returns to its quantity step
       with the code, and when there is none it opens the flow as today;
       covered in the destination layer's test
-- [ ] **T007** [US1] Instrumented test of story 1 (the real app, emulator):
+- [x] **T007** [US1] Instrumented test of story 1 (the real app, emulator):
       open the flow from a meal, log a food, confirm, assert the search with
       the meal, the entry among the diary's sections, and no detail on the
       way out.
 
 ## User Story 2 — back means the previous step, never a detour (P1)
 
-- [ ] **T008** [US2] Instrumented test of the walk back at every step of the
+- [x] **T008** [US2] Instrumented test of the walk back at every step of the
       flow (the quantity step -> the source step with the choices; the source
       step -> the screen the flow came from)
-- [ ] **T009** [US2] Instrumented test of the detail's round trip inside a
+- [x] **T009** [US2] Instrumented test of the detail's round trip inside a
       flow row: the flow's step, the query and the results kept, and a second
       opening never pushed
-- [ ] **T010** [US2] Instrumented test of the back control of a screen that
-      came from a destination's menu (goals editor -> More), which returns to
-      More's state
-- [ ] **T011** [US2] Instrumented test of the system's back at the flow's
+- [x] **T010** [US2] Instrumented test of More's inline goal editor and privacy
+      surface: change a goal, open and close privacy, and assert More retains
+      the edited goal and remains the active destination
+- [x] **T011** [US2] Instrumented test of the system's back at the flow's
       first step, which returns to the screen the flow came from
 
 ## User Story 3 — only screens the user asked for, ever (P2)
 
-- [ ] **T012** [US3] Instrumented test: a repeated tap of the bottom bar's
+- [x] **T012** [US3] Instrumented test: a repeated tap of the bottom bar's
       current tab is a no-op, and no entry is pushed (the bar's visibility
       unchanged)
-- [ ] **T013** [US3] Instrumented test: the coach opens over the screen it is
+- [x] **T013** [US3] Instrumented test: the coach opens over the screen it is
       asked from, closes back onto it, and the flow is exactly as it was
 - [ ] **T014** [US3] Run the whole gates against the feature:
       `:core:domain:testAndroidHostTest :feature:diary:testAndroidHostTest
