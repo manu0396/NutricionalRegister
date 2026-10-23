@@ -5,6 +5,7 @@ import android.content.Context
 import android.view.inputmethod.InputMethodManager
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -13,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -46,6 +48,7 @@ class Spec008AppIntegrationTest {
         rule.onNodeWithTag("add-food-quantity").assertIsDisplayed()
         rule.onNodeWithText("Breakfast").assertIsDisplayed()
 
+        rule.onNodeWithTag("add-food-confirm").assertIsEnabled()
         rule.onNodeWithTag("add-food-confirm").performClick()
 
         waitForTag("add-food-query")
@@ -64,10 +67,13 @@ class Spec008AppIntegrationTest {
         rule.onNodeWithTag("bottom-bar-library").performClick()
         rule.onNodeWithTag("library-add-$PRODUCT_CODE").performClick()
         rule.onNodeWithTag("add-food-chosen-product").assertIsDisplayed()
+        rule.onNodeWithTag("add-food-open-meal-sheet").performScrollTo()
         rule.onNodeWithTag("add-food-open-meal-sheet").performClick()
+        waitForTag("add-food-meal-sheet")
         waitForText("Lunch")
         rule.onNodeWithText("Lunch").assertIsDisplayed()
         rule.onNodeWithText("Lunch").performClick()
+        rule.onNodeWithTag("add-food-confirm").assertIsEnabled()
         rule.onNodeWithTag("add-food-confirm").performClick()
 
         waitForTag("add-food-query")
@@ -87,6 +93,7 @@ class Spec008AppIntegrationTest {
         rule.onNodeWithTag("goal-field-energy").performTextClearance()
         rule.onNodeWithTag("goal-field-energy").performTextInput("2500")
         hideKeyboard()
+        rule.onNodeWithTag("more-privacy-row").performScrollTo()
         rule.onNodeWithTag("more-privacy-row").performClick()
         waitForText("Privacy")
         rule.onNodeWithText("Privacy").assertIsDisplayed()

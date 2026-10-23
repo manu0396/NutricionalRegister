@@ -18,13 +18,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -67,6 +70,7 @@ class Spec008NavigationTest {
         rule.onNodeWithTag("product-add-to-diary").performClick()
         rule.onNodeWithText("Breakfast").assertIsDisplayed()
 
+        rule.onNodeWithTag("add-food-confirm").assertIsEnabled()
         rule.onNodeWithTag("add-food-confirm").performClick()
 
         waitForTag("add-food-query")
@@ -152,8 +156,13 @@ class Spec008NavigationTest {
         rule.onNodeWithTag("add-food-query").performTextInput("oats")
         rule.onNodeWithText(TEST_PRODUCT.name).performClick()
         rule.onNodeWithTag("product-add-to-diary").performClick()
+        rule.onNodeWithTag("add-food-open-meal-sheet").performScrollTo()
         rule.onNodeWithTag("add-food-open-meal-sheet").performClick()
+        waitForTag("add-food-meal-sheet")
+        waitForText("Lunch")
+        rule.onNodeWithText("Lunch").assertIsDisplayed()
         rule.onNodeWithText("Lunch").performClick()
+        rule.onNodeWithTag("add-food-confirm").assertIsEnabled()
         rule.onNodeWithTag("add-food-confirm").performClick()
 
         waitForTag("add-food-query")
@@ -173,6 +182,7 @@ class Spec008NavigationTest {
         rule.onNodeWithTag("goal-field-energy").performTextClearance()
         rule.onNodeWithTag("goal-field-energy").performTextInput("2500")
         rule.onNodeWithTag("goal-field-energy").assertTextContains("2500")
+        rule.onNodeWithTag("more-privacy-row").performScrollTo()
         rule.onNodeWithTag("more-privacy-row").performClick()
         rule.onNodeWithText("Privacy").assertIsDisplayed()
         rule.onNodeWithTag("test-close-privacy").performClick()
@@ -245,6 +255,14 @@ class Spec008NavigationTest {
         rule.waitForIdle()
         rule.waitUntil(15_000) {
             rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    private fun waitForText(text: String) {
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.waitForIdle()
+        rule.waitUntil(15_000) {
+            rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
         }
     }
 }
