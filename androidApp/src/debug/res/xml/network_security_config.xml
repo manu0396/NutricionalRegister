@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The local gateway certificate is trusted only in debuggable builds. -->
+<network-security-config>
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="@raw/gateway_ca" />
+            <certificates src="system" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>
