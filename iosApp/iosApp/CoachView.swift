@@ -40,6 +40,9 @@ struct CoachView: View {
     NavigationStack {
       VStack {
         if let state = viewModel.state {
+          Text("Status: \\(String(describing: state.availability))")
+            .font(.caption)
+            .foregroundStyle(.secondary)
           availabilityView(state)
           ScrollView {
             VStack(alignment: .leading, spacing: 8) {
@@ -67,14 +70,20 @@ struct CoachView: View {
           if state.isSending {
             ProgressView()
           }
-          HStack {
-            TextField("Message", text: $input)
-            Button("Send") {
-              viewModel.send(input)
-              input = ""
+          if let state = viewModel.state, state.availability is AssistantAvailabilityReady {
+            HStack {
+              TextField("Message", text: $input)
+              Button("Send") {
+                viewModel.send(input)
+                input = ""
+              }
             }
+            .padding()
+          } else if let state = viewModel.state, let error = state.error {
+            Text(error)
+              .foregroundStyle(.secondary)
+              .padding()
           }
-          .padding()
         } else {
           ProgressView()
         }
