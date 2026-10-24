@@ -56,11 +56,12 @@ struct ContentView: View {
             Button {
               appRoot.showCoach = true
             } label: {
-              Image(systemName: "face.smiling")
+              Image(systemName: "bubble.left.and.bubble.right.fill")
                 .font(.title2)
                 .padding(14)
-                .background(.secondary, in: Circle())
+                .background(.blue, in: Circle())
                 .foregroundStyle(.white)
+                .shadow(radius: 4)
             }
             .accessibilityLabel("Ask the Coach")
           }
