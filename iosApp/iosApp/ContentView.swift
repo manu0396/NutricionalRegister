@@ -35,7 +35,32 @@ struct ContentView: View {
       .tag(NutriLogTab.more)
     }
     .overlay(alignment: .bottomTrailing) {
-      coachButton
+      VStack(spacing: 12) {
+        if navigator.selectedTab == .today || navigator.selectedTab == .library {
+          Button {
+            navigator.openAddFood()
+          } label: {
+            Image(systemName: "plus")
+              .font(.title2)
+              .padding(12)
+              .background(.tint, in: Circle())
+              .foregroundStyle(.white)
+          }
+          .accessibilityLabel("Add food")
+        }
+        Button {
+          appRoot.showCoach = true
+        } label: {
+          Image(systemName: "face.smiling")
+            .font(.title2)
+            .padding(12)
+            .background(.secondary, in: Circle())
+            .foregroundStyle(.white)
+        }
+        .accessibilityLabel("Ask the Coach")
+      }
+      .padding(.bottom, 90)
+      .padding(.trailing, 16)
     }
     .sheet(isPresented: $appRoot.showCoach) {
       CoachView(bridge: appRoot.bridge)
@@ -48,20 +73,6 @@ struct ContentView: View {
         "Your diary, your goals and your library stay on this device. Only the assistant sends anything anywhere, and only the minimum it needs."
       )
     }
-  }
-
-  private var coachButton: some View {
-    Button {
-      appRoot.showCoach = true
-    } label: {
-      Image(systemName: "face.smiling")
-        .font(.title2)
-        .padding(12)
-        .background(.secondary, in: Circle())
-        .foregroundStyle(.white)
-    }
-    .padding()
-    .accessibilityLabel("Ask the Coach")
   }
 
   @ViewBuilder
