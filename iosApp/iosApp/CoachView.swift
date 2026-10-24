@@ -73,19 +73,19 @@ struct CoachView: View {
           if state.isSending {
             ProgressView()
           }
-          if let state = viewModel.state, state.availability is AssistantAvailabilityReady {
-            HStack {
-              TextField("Message", text: $input)
-              Button("Send") {
-                viewModel.send(input)
-                input = ""
-              }
+          HStack {
+            TextField("Message", text: $input)
+              .textFieldStyle(.roundedBorder)
+            Button("Send") {
+              viewModel.send(input)
+              input = ""
             }
-            .padding()
-          } else if let state = viewModel.state, let error = state.error {
+          }
+          .padding()
+          if let state = viewModel.state, let error = state.error {
             Text(error)
               .foregroundStyle(.secondary)
-              .padding()
+              .padding(.horizontal)
           }
         } else {
           ProgressView()
