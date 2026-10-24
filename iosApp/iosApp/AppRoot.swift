@@ -32,8 +32,9 @@ final class AppRoot: ObservableObject {
 
   init() {
     self.storeKitClient = StoreKitPurchaseClient(productIdsByCode: ["nutrilog_pro": "nutrilog_pro"])
-    let aiGatewayUrl =
+    let rawAiGatewayUrl =
       Bundle.main.object(forInfoDictionaryKey: "NUTRILOG_AI_PROXY_URL") as? String ?? ""
+    let aiGatewayUrl = rawAiGatewayUrl.hasPrefix("https://") ? rawAiGatewayUrl : ""
     self.bridge = IosAppBridgeKt.createIosAppBridge(
       purchaseClient: storeKitClient, aiGatewayBaseUrl: aiGatewayUrl)
   }

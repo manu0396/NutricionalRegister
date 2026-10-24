@@ -7,6 +7,6 @@
 	<key>NSCameraUsageDescription</key>
 	<string>NutriLog uses the camera to read food barcodes so you can add products to your diary.</string>
 	<key>NUTRILOG_AI_PROXY_URL</key>
-	<string>$(NUTRILOG_AI_PROXY_URL)</string>
+	<string>https://localhost:8443</string>
 </dict>
 </plist>
