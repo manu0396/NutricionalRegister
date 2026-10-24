@@ -80,7 +80,10 @@ struct CoachView: View {
             }
           }
           .padding()
-          .onAppear { isInputFocused = true }
+          .task {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            isInputFocused = true
+          }
           if let state = viewModel.state, let error = state.error {
             Text(error)
               .foregroundStyle(.secondary)
