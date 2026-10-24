@@ -30,6 +30,7 @@ struct CoachView: View {
   @EnvironmentObject private var appRoot: AppRoot
   @StateObject private var viewModel: CoachViewModel
   @State private var input: String = ""
+  @FocusState private var isInputFocused: Bool
 
   init(bridge: IosAppBridge) {
     self.bridge = bridge
@@ -71,12 +72,15 @@ struct CoachView: View {
           HStack {
             TextField("Message", text: $input)
               .textFieldStyle(.roundedBorder)
+              .focused($isInputFocused)
+              .submitLabel(.send)
             Button("Send") {
               viewModel.send(input)
               input = ""
             }
           }
           .padding()
+          .onAppear { isInputFocused = true }
           if let state = viewModel.state, let error = state.error {
             Text(error)
               .foregroundStyle(.secondary)
