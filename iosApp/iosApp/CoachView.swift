@@ -43,6 +43,9 @@ struct CoachView: View {
           Text("Status: \\(String(describing: state.availability))")
             .font(.caption)
             .foregroundStyle(.secondary)
+          Text("Configured: \\(appRoot.bridge.isAssistantConfigured)")
+            .font(.caption)
+            .foregroundStyle(.secondary)
           availabilityView(state)
           ScrollView {
             VStack(alignment: .leading, spacing: 8) {
