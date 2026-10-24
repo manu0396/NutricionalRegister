@@ -3,15 +3,11 @@ package com.example.nutricionalregister
 import com.example.nutricionalregister.data.ProductSearchRuntime
 import com.example.nutricionalregister.data.createProductSearchRuntime
 import com.example.nutricionalregister.domain.assistant.AssistantActionExecutor
-import com.example.nutricionalregister.domain.diary.DayBoundaryProvider
 import com.example.nutricionalregister.domain.diary.MealType
 import com.example.nutricionalregister.domain.diary.NutritionGoal
 import com.example.nutricionalregister.domain.product.EpochClock
-import com.example.nutricionalregister.domain.purchase.PurchasableProduct
 import com.example.nutricionalregister.domain.purchase.PurchaseClient
-import com.example.nutricionalregister.domain.purchase.PurchaseRecord
-import com.example.nutricionalregister.domain.purchase.PurchaseRepository
-import com.example.nutricionalregister.domain.purchase.SavedProduct
+import com.example.nutricionalregister.domain.summary.WeeklySummary
 import com.example.nutricionalregister.feature.assistant.AssistantState
 import com.example.nutricionalregister.feature.assistant.CoachViewModel
 import com.example.nutricionalregister.feature.diary.AddFoodSource
@@ -29,7 +25,6 @@ import com.example.nutricionalregister.feature.search.ProductDetailState
 import com.example.nutricionalregister.feature.search.ProductDetailViewModel
 import com.example.nutricionalregister.feature.search.ProductSearchState
 import com.example.nutricionalregister.feature.search.ProductSearchViewModel
-import com.example.nutricionalregister.domain.summary.WeeklySummary
 import com.example.nutricionalregister.feature.summary.SummaryViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +32,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import platform.Foundation.NSDate
 import platform.Foundation.timeIntervalSince1970
@@ -70,60 +64,68 @@ public class IosAppBridge internal constructor(
 
     init {
         val clock = EpochClock { (NSDate().timeIntervalSince1970 * 1000.0).toLong() }
-        diaryViewModel = DiaryViewModel(
-            diaryRepository = runtime.diaryRepository,
-            goalRepository = runtime.nutritionGoalRepository,
-            dayBoundaryProvider = runtime.dayBoundaryProvider,
-            clock = clock,
-            scope = scope,
-        )
-        addFoodViewModel = AddFoodViewModel(
-            diaryRepository = runtime.diaryRepository,
-            productSearchRepository = runtime.productSearchRepository,
-            dayBoundaryProvider = runtime.dayBoundaryProvider,
-            clock = clock,
-            scope = scope,
-        )
-        summaryViewModel = SummaryViewModel(
-            diaryRepository = runtime.diaryRepository,
-            dayBoundaryProvider = runtime.dayBoundaryProvider,
-            clock = clock,
-            scope = scope,
-        )
-        libraryViewModel = SavedProductsViewModel(
-            savedProductRepository = runtime.savedProductRepository,
-            clock = clock,
-            scope = scope,
-        )
-        searchViewModel = ProductSearchViewModel(
-            productSearchRepository = runtime.productSearchRepository,
-            recentSearchRepository = runtime.recentSearchRepository,
-            clock = clock,
-            scope = scope,
-        )
-        coachViewModel = CoachViewModel(
-            assistantClient = runtime.assistantClient,
-            actionExecutor = AssistantActionExecutor(
+        diaryViewModel =
+            DiaryViewModel(
                 diaryRepository = runtime.diaryRepository,
-                productRepository = runtime.productSearchRepository,
+                goalRepository = runtime.nutritionGoalRepository,
+                dayBoundaryProvider = runtime.dayBoundaryProvider,
+                clock = clock,
+                scope = scope,
+            )
+        addFoodViewModel =
+            AddFoodViewModel(
+                diaryRepository = runtime.diaryRepository,
+                productSearchRepository = runtime.productSearchRepository,
+                dayBoundaryProvider = runtime.dayBoundaryProvider,
+                clock = clock,
+                scope = scope,
+            )
+        summaryViewModel =
+            SummaryViewModel(
+                diaryRepository = runtime.diaryRepository,
+                dayBoundaryProvider = runtime.dayBoundaryProvider,
+                clock = clock,
+                scope = scope,
+            )
+        libraryViewModel =
+            SavedProductsViewModel(
                 savedProductRepository = runtime.savedProductRepository,
                 clock = clock,
+                scope = scope,
+            )
+        searchViewModel =
+            ProductSearchViewModel(
+                productSearchRepository = runtime.productSearchRepository,
+                recentSearchRepository = runtime.recentSearchRepository,
+                clock = clock,
+                scope = scope,
+            )
+        coachViewModel =
+            CoachViewModel(
+                assistantClient = runtime.assistantClient,
+                actionExecutor =
+                    AssistantActionExecutor(
+                        diaryRepository = runtime.diaryRepository,
+                        productRepository = runtime.productSearchRepository,
+                        savedProductRepository = runtime.savedProductRepository,
+                        clock = clock,
+                        dayBoundaryProvider = runtime.dayBoundaryProvider,
+                    ),
+                diaryRepository = runtime.diaryRepository,
+                goalRepository = runtime.nutritionGoalRepository,
+                savedProductRepository = runtime.savedProductRepository,
                 dayBoundaryProvider = runtime.dayBoundaryProvider,
-            ),
-            diaryRepository = runtime.diaryRepository,
-            goalRepository = runtime.nutritionGoalRepository,
-            savedProductRepository = runtime.savedProductRepository,
-            dayBoundaryProvider = runtime.dayBoundaryProvider,
-            clock = clock,
-            scope = scope,
-            isConfigured = runtime.isAssistantConfigured,
-            connectivityStatusProvider = null,
-        )
-        premiumPurchaseViewModel = PremiumPurchaseViewModel(
-            purchaseRepository = runtime.purchaseRepository,
-            scope = scope,
-            queryProduct = { code -> purchaseClient.queryProduct(code)?.amountLabel },
-        )
+                clock = clock,
+                scope = scope,
+                isConfigured = runtime.isAssistantConfigured,
+                connectivityStatusProvider = null,
+            )
+        premiumPurchaseViewModel =
+            PremiumPurchaseViewModel(
+                purchaseRepository = runtime.purchaseRepository,
+                scope = scope,
+                queryProduct = { code -> purchaseClient.queryProduct(code)?.amountLabel },
+            )
         barcodeResolver = BarcodeResolver(runtime.productSearchRepository)
     }
 
@@ -136,8 +138,7 @@ public class IosAppBridge internal constructor(
         get() = com.example.nutricionalregister.domain.premium.PremiumProduct.CODE
 
     // region Diary
-    public fun observeDiaryState(onChange: (DiaryState) -> Unit): Long =
-        subscribe(diaryViewModel.state) { state -> onChange(state) }
+    public fun observeDiaryState(onChange: (DiaryState) -> Unit): Long = subscribe(diaryViewModel.state) { state -> onChange(state) }
 
     public fun refreshDiary() {
         diaryViewModel.refresh()
@@ -153,8 +154,7 @@ public class IosAppBridge internal constructor(
     // endregion
 
     // region Add food
-    public fun observeAddFoodState(onChange: (AddFoodState) -> Unit): Long =
-        subscribe(addFoodViewModel.state) { state -> onChange(state) }
+    public fun observeAddFoodState(onChange: (AddFoodState) -> Unit): Long = subscribe(addFoodViewModel.state) { state -> onChange(state) }
 
     public fun startAddFood(
         sessionId: String,
@@ -253,11 +253,12 @@ public class IosAppBridge internal constructor(
     // region Product detail
     public fun createProductDetailHandle(code: String): ProductDetailHandle {
         val handleScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-        val viewModel = ProductDetailViewModel(
-            productSearchRepository = runtime.productSearchRepository,
-            savedProductRepository = runtime.savedProductRepository,
-            scope = handleScope,
-        ).apply { load(code) }
+        val viewModel =
+            ProductDetailViewModel(
+                productSearchRepository = runtime.productSearchRepository,
+                savedProductRepository = runtime.savedProductRepository,
+                scope = handleScope,
+            ).apply { load(code) }
         return ProductDetailHandle(viewModel, handleScope)
     }
     // endregion
@@ -272,8 +273,7 @@ public class IosAppBridge internal constructor(
     // endregion
 
     // region Coach
-    public fun observeCoachState(onChange: (AssistantState) -> Unit): Long =
-        subscribe(coachViewModel.state) { state -> onChange(state) }
+    public fun observeCoachState(onChange: (AssistantState) -> Unit): Long = subscribe(coachViewModel.state) { state -> onChange(state) }
 
     public fun sendCoachMessage(text: String) {
         coachViewModel.send(text)
@@ -310,13 +310,19 @@ public class IosAppBridge internal constructor(
     // endregion
 
     // region Barcode
-    public fun resolveBarcode(code: String, onResolved: (BarcodeResolution) -> Unit) {
+    public fun resolveBarcode(
+        code: String,
+        onResolved: (BarcodeResolution) -> Unit,
+    ) {
         scope.launch { onResolved(barcodeResolver.resolve(code)) }
     }
     // endregion
 
     // region Utilities
-    public fun getProduct(code: String, onResult: (com.example.nutricionalregister.domain.product.Product?) -> Unit) {
+    public fun getProduct(
+        code: String,
+        onResult: (com.example.nutricionalregister.domain.product.Product?) -> Unit,
+    ) {
         scope.launch { onResult(runtime.productSearchRepository.getProduct(code)) }
     }
     // endregion
@@ -339,7 +345,10 @@ public class IosAppBridge internal constructor(
     }
     // endregion
 
-    private fun <T> subscribe(flow: Flow<T>, onEach: (T) -> Unit): Long {
+    private fun <T> subscribe(
+        flow: Flow<T>,
+        onEach: (T) -> Unit,
+    ): Long {
         val subscriptionId = ++nextSubscriptionId
         jobs[subscriptionId] =
             scope.launch {
@@ -386,11 +395,12 @@ public fun createIosAppBridge(
 ): IosAppBridge {
     val clock = EpochClock { (NSDate().timeIntervalSince1970 * 1000.0).toLong() }
     return IosAppBridge(
-        runtime = createProductSearchRuntime(
-            clock = clock,
-            purchaseClient = purchaseClient,
-            aiGatewayBaseUrl = aiGatewayBaseUrl,
-        ),
+        runtime =
+            createProductSearchRuntime(
+                clock = clock,
+                purchaseClient = purchaseClient,
+                aiGatewayBaseUrl = aiGatewayBaseUrl,
+            ),
         purchaseClient = purchaseClient,
     )
 }
