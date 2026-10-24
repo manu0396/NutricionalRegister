@@ -1,5 +1,5 @@
 TEAM_ID=
-
+NUTRILOG_AI_PROXY_URL=https://localhost:8443
 PRODUCT_NAME=NutricionalRegister
 PRODUCT_BUNDLE_IDENTIFIER=com.example.nutricionalregister.NutricionalRegister$(TEAM_ID)
 
