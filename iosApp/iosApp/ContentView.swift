@@ -6,61 +6,68 @@ struct ContentView: View {
   @EnvironmentObject private var navigator: AppNavigator
 
   var body: some View {
-    TabView(selection: $navigator.selectedTab) {
-      NavigationStack(path: $navigator.todayPath) {
-        TodayView(bridge: appRoot.bridge)
-          .navigationDestination(for: Route.self) { route in
-            routeView(route)
-          }
-      }
-      .tabItem { Label("Today", systemImage: "calendar") }
-      .tag(NutriLogTab.today)
-
-      NavigationStack(path: $navigator.libraryPath) {
-        LibraryView(bridge: appRoot.bridge)
-          .navigationDestination(for: Route.self) { route in
-            routeView(route)
-          }
-      }
-      .tabItem { Label("Library", systemImage: "book") }
-      .tag(NutriLogTab.library)
-
-      NavigationStack(path: $navigator.morePath) {
-        MoreView(bridge: appRoot.bridge)
-          .navigationDestination(for: Route.self) { route in
-            routeView(route)
-          }
-      }
-      .tabItem { Label("More", systemImage: "ellipsis") }
-      .tag(NutriLogTab.more)
-    }
-    .overlay(alignment: .bottomTrailing) {
-      VStack(spacing: 12) {
-        if navigator.selectedTab == .today || navigator.selectedTab == .library {
-          Button {
-            navigator.openAddFood()
-          } label: {
-            Image(systemName: "plus")
-              .font(.title2)
-              .padding(12)
-              .background(.tint, in: Circle())
-              .foregroundStyle(.white)
-          }
-          .accessibilityLabel("Add food")
+    ZStack {
+      TabView(selection: $navigator.selectedTab) {
+        NavigationStack(path: $navigator.todayPath) {
+          TodayView(bridge: appRoot.bridge)
+            .navigationDestination(for: Route.self) { route in
+              routeView(route)
+            }
         }
-        Button {
-          appRoot.showCoach = true
-        } label: {
-          Image(systemName: "face.smiling")
-            .font(.title2)
-            .padding(12)
-            .background(.secondary, in: Circle())
-            .foregroundStyle(.white)
+        .tabItem { Label("Today", systemImage: "calendar") }
+        .tag(NutriLogTab.today)
+
+        NavigationStack(path: $navigator.libraryPath) {
+          LibraryView(bridge: appRoot.bridge)
+            .navigationDestination(for: Route.self) { route in
+              routeView(route)
+            }
         }
-        .accessibilityLabel("Ask the Coach")
+        .tabItem { Label("Library", systemImage: "book") }
+        .tag(NutriLogTab.library)
+
+        NavigationStack(path: $navigator.morePath) {
+          MoreView(bridge: appRoot.bridge)
+            .navigationDestination(for: Route.self) { route in
+              routeView(route)
+            }
+        }
+        .tabItem { Label("More", systemImage: "ellipsis") }
+        .tag(NutriLogTab.more)
       }
-      .padding(.bottom, 90)
-      .padding(.trailing, 16)
+
+      VStack {
+        Spacer()
+        HStack {
+          Spacer()
+          VStack(spacing: 12) {
+            if navigator.selectedTab == .today || navigator.selectedTab == .library {
+              Button {
+                navigator.openAddFood()
+              } label: {
+                Image(systemName: "plus")
+                  .font(.title2)
+                  .padding(14)
+                  .background(.tint, in: Circle())
+                  .foregroundStyle(.white)
+              }
+              .accessibilityLabel("Add food")
+            }
+            Button {
+              appRoot.showCoach = true
+            } label: {
+              Image(systemName: "face.smiling")
+                .font(.title2)
+                .padding(14)
+                .background(.secondary, in: Circle())
+                .foregroundStyle(.white)
+            }
+            .accessibilityLabel("Ask the Coach")
+          }
+          .padding(.trailing, 16)
+        }
+        .padding(.bottom, 96)
+      }
     }
     .sheet(isPresented: $appRoot.showCoach) {
       CoachView(bridge: appRoot.bridge)
