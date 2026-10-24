@@ -40,10 +40,10 @@ struct CoachView: View {
     NavigationStack {
       VStack {
         if let state = viewModel.state {
-          Text("Status: \\(String(describing: state.availability))")
+          Text("Status: \(String(describing: state.availability))")
             .font(.caption)
             .foregroundStyle(.secondary)
-          Text("Configured: \\(appRoot.bridge.isAssistantConfigured)")
+          Text("Configured: \(appRoot.bridge.isAssistantConfigured)")
             .font(.caption)
             .foregroundStyle(.secondary)
           availabilityView(state)
