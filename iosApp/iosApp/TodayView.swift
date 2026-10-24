@@ -45,51 +45,92 @@ struct TodayView: View {
   }
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 16) {
-        header
-        if let state = viewModel.diaryState {
-          totalsCard(state)
-          macrosRow(state)
-          if state.isEmpty {
-            emptyState
-          }
-        } else {
-          ProgressView()
-        }
-        if let weekly = viewModel.weeklySummary {
-          weeklyCard(weekly)
-        }
+    VStack(alignment: .leading, spacing: 0) {
+      HStack {
+        Text(formatDayLabel(viewModel.diaryState?.dayEpochMillis ?? 0))
+          .font(.title2.bold())
+          .frame(maxWidth: .infinity, alignment: .leading)
+        Button("Week") { navigator.openWeekly() }
+          .buttonStyle(.bordered)
       }
       .padding()
-    }
-    .navigationTitle("Today")
-    .toolbar {
-      Button("Refresh") { viewModel.refresh() }
+
+      ScrollView {
+        VStack(alignment: .leading, spacing: 16) {
+          if let state = viewModel.diaryState {
+            DaySummaryCard(state: state)
+            MacroTiles(state: state)
+            if state.isEmpty {
+              VStack(alignment: .leading, spacing: 8) {
+                Text("Nothing logged today")
+                  .font(.headline)
+                Text("Log your first food and the totals of the day build up from there.")
+                  .font(.footnote)
+                  .foregroundStyle(.secondary)
+                Button("Add food") { navigator.openAddFood() }
+                  .buttonStyle(.borderedProminent)
+              }
+              .padding()
+            }
+            ForEach(
+              [MealType.breakfast, MealType.lunch, MealType.dinner, MealType.snacks], id: \.self
+            ) { meal in
+              MealSection(
+                meal: meal,
+                entries: (state.entriesByMeal[meal] as? [DiaryEntry]) ?? [],
+                totals: state.mealTotals[meal]
+                  ?? NutritionTotals(
+                    energyKcal: 0, proteinGrams: 0, carbohydrateGrams: 0, fatGrams: 0,
+                    incomplete: Set<Nutrient>()),
+                onAddFood: { navigator.openAddFood(meal: meal.storageName) },
+                onRemoveEntry: { id in viewModel.removeEntry(id: id) }
+              )
+            }
+            WeekCard(summary: viewModel.weeklySummary, onOpen: { navigator.openWeekly() })
+          } else {
+            ProgressView()
+              .frame(maxWidth: .infinity, maxHeight: .infinity)
+          }
+        }
+        .padding()
+      }
     }
     .onAppear { viewModel.refresh() }
   }
+}
 
-  private var header: some View {
-    HStack {
-      Text("NutriLog")
-        .font(.title2.bold())
-      Spacer()
-      Button("Week") { navigator.openWeekly() }
-    }
-  }
+private func formatDayLabel(_ millis: Int64) -> String {
+  let date = Date(timeIntervalSince1970: Double(millis) / 1000.0)
+  let formatter = DateFormatter()
+  formatter.dateStyle = .full
+  formatter.timeStyle = .none
+  return formatter.string(from: date)
+}
 
-  private func totalsCard(_ state: DiaryState) -> some View {
-    VStack(alignment: .leading, spacing: 4) {
-      Text("Totals")
+private struct DaySummaryCard: View {
+  let state: DiaryState
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text("\(Int((state.totals.energyKcal as? Double) ?? 0)) kcal")
         .font(.largeTitle.bold())
+      Text("of \(state.goal.energyKcal) kcal goal")
+        .foregroundStyle(.secondary)
+      Text("Remaining today")
+        .font(.footnote)
+        .foregroundStyle(.secondary)
     }
+    .frame(maxWidth: .infinity, alignment: .leading)
     .padding()
     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
   }
+}
 
-  private func macrosRow(_ state: DiaryState) -> some View {
-    HStack {
+private struct MacroTiles: View {
+  let state: DiaryState
+
+  var body: some View {
+    HStack(spacing: 12) {
       macroTile(
         "Protein", value: (state.totals.proteinGrams as? Double) ?? 0,
         goal: Double(state.goal.proteinGrams))
@@ -110,26 +151,25 @@ struct TodayView: View {
         .foregroundStyle(.secondary)
     }
     .frame(maxWidth: .infinity)
-  }
-
-  private var emptyState: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text("Nothing logged today")
-        .font(.headline)
-      Text("Log your first food and the totals of the day build up from there.")
-        .font(.footnote)
-        .foregroundStyle(.secondary)
-    }
     .padding()
+    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
   }
+}
 
-  private func mealSection(_ meal: MealType, entries: [DiaryEntry]) -> some View {
+private struct MealSection: View {
+  let meal: MealType
+  let entries: [DiaryEntry]
+  let totals: NutritionTotals
+  let onAddFood: () -> Void
+  let onRemoveEntry: (Int64) -> Void
+
+  var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       HStack {
-        Text(meal.displayName)
+        Text(mealName(meal))
           .font(.headline)
         Spacer()
-        Button("Add") { navigator.openAddFood(meal: meal.storageName) }
+        Button("Add") { onAddFood() }
           .buttonStyle(.bordered)
       }
       if entries.isEmpty {
@@ -137,44 +177,56 @@ struct TodayView: View {
           .font(.footnote)
           .foregroundStyle(.secondary)
       } else {
-        Text("\(entries.count ?? 0) entries")
+        Text("\(Int((totals.energyKcal as? Double) ?? 0)) kcal")
           .font(.footnote)
+          .foregroundStyle(.secondary)
+        Text("\(entries.count ?? 0) entries")
+          .font(.caption)
+          .foregroundStyle(.secondary)
       }
     }
     .padding()
     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
   }
 
-  private func weeklyCard(_ summary: WeeklySummary) -> some View {
-    VStack(alignment: .leading, spacing: 4) {
-      Text("This week")
-        .font(.headline)
-      Text("Average \(Int((summary.averageTotals.energyKcal as? Double) ?? 0)) kcal/day")
-        .font(.footnote)
-        .foregroundStyle(.secondary)
-    }
-    .padding()
-    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
-    .onTapGesture { navigator.openWeekly() }
-  }
-}
-
-extension MealType {
-  static var allCases: [MealType] {
-    [breakfast, lunch, dinner, snacks]
-  }
-
-  var displayName: String {
-    switch self {
+  private func mealName(_ meal: MealType) -> String {
+    switch meal {
     case .breakfast: return "Breakfast"
     case .lunch: return "Lunch"
     case .dinner: return "Dinner"
     case .snacks: return "Snacks"
-    default: return name
+    default: return meal.name
     }
   }
+}
 
-  var storageName: String {
-    name
+private struct WeekCard: View {
+  let summary: WeeklySummary?
+  let onOpen: () -> Void
+
+  var body: some View {
+    Button(action: onOpen) {
+      VStack(alignment: .leading, spacing: 4) {
+        Text("This week")
+          .font(.headline)
+        if let summary {
+          Text("Average \(Int((summary.averageTotals.energyKcal as? Double) ?? 0)) kcal/day")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        } else {
+          Text("Loading weekly summary")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding()
+      .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+    }
+    .buttonStyle(.plain)
   }
+}
+
+extension MealType {
+  var storageName: String { name }
 }

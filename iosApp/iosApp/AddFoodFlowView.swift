@@ -219,3 +219,19 @@ struct AddFoodQuantityView: View {
     }
   }
 }
+
+extension MealType {
+  static var allCases: [MealType] {
+    [breakfast, lunch, dinner, snacks]
+  }
+
+  var displayName: String {
+    switch self {
+    case .breakfast: return "Breakfast"
+    case .lunch: return "Lunch"
+    case .dinner: return "Dinner"
+    case .snacks: return "Snacks"
+    default: return name
+    }
+  }
+}
