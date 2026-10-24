@@ -38,84 +38,69 @@ struct CoachView: View {
   }
 
   var body: some View {
-    NavigationStack {
-      VStack {
-        if let state = viewModel.state {
-
-          availabilityView(state)
-          ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-              ForEach(Array(state.messages.enumerated()), id: \.offset) { _, message in
-                Text(message.text)
-                  .padding(8)
-                  .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
-              }
-              if let proposal = state.pendingProposal {
-                VStack(alignment: .leading, spacing: 4) {
-                  Text("Proposed action")
-                    .font(.headline)
-                  Text(proposal.text)
-                  HStack {
-                    Button("Confirm") { viewModel.confirmProposal() }
-                    Button("Dismiss") { viewModel.dismissProposal() }
-                  }
-                }
-                .padding()
-                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
-              }
+    VStack {
+      ScrollView {
+        VStack(alignment: .leading, spacing: 8) {
+          if let state = viewModel.state {
+            if state.availability is AssistantAvailabilityNotConfigured {
+              Text("Assistant is not configured for this build.")
+                .foregroundStyle(.secondary)
+            } else if state.availability is AssistantAvailabilityConsentRequired {
+              Text("Consent required before sending messages.")
+                .foregroundStyle(.secondary)
+              Button("Grant consent") { viewModel.grantConsent() }
+            } else if state.availability is AssistantAvailabilityOffline {
+              Text("Assistant needs a connection.")
+                .foregroundStyle(.secondary)
             }
-            .padding()
-          }
-          if state.isSending {
+            ForEach(Array(state.messages.enumerated()), id: \.offset) { _, message in
+              Text(message.text)
+                .padding(8)
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+            }
+            if let proposal = state.pendingProposal {
+              VStack(alignment: .leading, spacing: 4) {
+                Text("Proposed action")
+                  .font(.headline)
+                Text(proposal.text)
+                HStack {
+                  Button("Confirm") { viewModel.confirmProposal() }
+                  Button("Dismiss") { viewModel.dismissProposal() }
+                }
+              }
+              .padding()
+              .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+            }
+            if state.isSending {
+              ProgressView()
+            }
+            if let error = state.error {
+              Text(error)
+                .foregroundStyle(.secondary)
+            }
+          } else {
             ProgressView()
           }
-          HStack {
-            TextField("Message", text: $input)
-              .textFieldStyle(.roundedBorder)
-              .focused($isInputFocused)
-              .submitLabel(.send)
-            Button("Send") {
-              viewModel.send(input)
-              input = ""
-            }
-          }
-          .padding()
-          .task {
-            try? await Task.sleep(nanoseconds: 100_000_000)
-            isInputFocused = true
-          }
-          if let state = viewModel.state, let error = state.error {
-            Text(error)
-              .foregroundStyle(.secondary)
-              .padding(.horizontal)
-          }
-        } else {
-          ProgressView()
+        }
+        .padding()
+      }
+
+      HStack {
+        TextField("Message", text: $input)
+          .textFieldStyle(.roundedBorder)
+          .focused($isInputFocused)
+          .submitLabel(.send)
+        Button("Send") {
+          viewModel.send(input)
+          input = ""
         }
       }
-      .navigationTitle("Coach")
-      .toolbar {
-        Button("Close") { appRoot.showCoach = false }
-      }
-    }
-  }
-
-  @ViewBuilder
-  private func availabilityView(_ state: AssistantState) -> some View {
-    if state.availability is AssistantAvailabilityNotConfigured {
-      Text("Assistant is not configured for this build.")
-        .foregroundStyle(.secondary)
-        .padding()
-    } else if state.availability is AssistantAvailabilityConsentRequired {
-      VStack {
-        Text("Consent required before sending messages.")
-        Button("Grant consent") { viewModel.grantConsent() }
-      }
       .padding()
-    } else if state.availability is AssistantAvailabilityOffline {
-      Text("Assistant needs a connection.")
-        .foregroundStyle(.secondary)
-        .padding()
+      .task {
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        isInputFocused = true
+      }
     }
+    .padding()
   }
 }
